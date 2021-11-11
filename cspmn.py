@@ -38,9 +38,6 @@ import pickle
 from tqdm import tqdm
 from main_testing import child_parser
 
-
-
-
 class contaminator():
     def __init__(self):
         self.rng = numpy.random.default_rng()
@@ -52,10 +49,6 @@ class contaminator():
         node.weights = self.rng.dirichlet(alpha=[random.randint(1,100) for x in node.weights])
         return node.weights
 cont = contaminator()
-
-#input a node
-
-
 
 
 
@@ -103,75 +96,6 @@ def learner(spmn, n=10):
 
 
 
-#plot_spn(valus[0],'spmn.pdf', feature_labels=feature_labels)
-
-from collections import defaultdict
-def credal_best_next_decisions(cspmn_list, state,env):
-    decisions = {}
-    state_iterator = 0
-    env.reset()
-    while(True):
-        decisions[state_iterator] = {}
-        for cspmn in cspmn_list:
-            spmn_output = best_next_decision(cspmn,state)
-            action = spmn_output[0][0]
-            #print(action)
-
-            if action in decisions[state_iterator]: decisions[state_iterator][action] = decisions[state_iterator][action]+1
-            else: decisions[state_iterator][action]=1
-
-        dominant_action = None
-        credal_value = 0
-        curr_state_decisions=decisions[state_iterator]
-        for x in curr_state_decisions:
-            if curr_state_decisions[x]>credal_value:
-                dominant_action = x
-                credal_value = curr_state_decisions[x]
-
-        curr_state, reward, done=env.step(dominant_action)
-        state = curr_state
-        state_iterator+=1
-        if done:
-            break
-
-    return decisions
-
-
-
-def get_reward(dataset,spmn):
-    # policy = ""
-    env = get_env(dataset)
-    state = env.reset()
-    while (True):
-        output = best_next_decision(spmn, state)
-        print(output)
-        action = output[0][0]
-        # policy += f"{action}  "
-        state, reward, done = env.step(action)
-        if done:
-            return reward
-        # return policy
-
-
-
-
-#dataset = "Elevators"
-
-
-
-
-
-
-
-
-#Postprocessing Step to turn a spmn into a credal spmn
-#TODO Thread it
-
-#TODO turn it into real e_contamination
-#TODO Test to make sure that it generates semi-unique cspmns (currently unsure)
-#Build multiple credal SPMNs from one pass through (Done)
-
-
 
 def buildSPMN(dataset):
     partial_order = get_partial_order(dataset)
@@ -188,7 +112,7 @@ def buildSPMN(dataset):
     data = df.values
     train, test = data, np.array(random.sample(list(data), int(data.shape[0] * 0.02)))
 
-    #print("Start Learning...")
+    # print("Start Learning...")
     spmn = SPMN(partial_order, decision_nodes, utility_node, feature_names, meta_types,
                 cluster_by_curr_information_set=True, util_to_bin=False)
 
@@ -197,75 +121,28 @@ def buildSPMN(dataset):
     return spmn
 
 
-def getSPMN(dataset):
-    with open(f"spn/data/original_new/{dataset}/spmn_original.pkle","rb") as file:
-        spmn = pickle.load(file)
-    return spmn
+def credal_best_next_decision(cspmn_list,state):
+    decisions = {}
+
+    for cspmn in cspmn_list:
+        spmn_output = best_next_decision(cspmn, state)
+        action = spmn_output[0][0]
+
+        if action in decisions:
+            decisions[action] = decisions[action] + 1
+        else:
+            decisions[action] = 1
+
+    dominant_action = None
+    credal_value = 0
+    curr_state_decisions = decisions
+    for x in curr_state_decisions:
+        if curr_state_decisions[x] > credal_value:
+            dominant_action = x
+            credal_value = curr_state_decisions[x]
 
 
-def credal_tester(datas):
-    for dataset in datas:
-        # buildSPMN(dataset)
-        print(f"Dataset: {dataset}")
-        spmn = getSPMN(dataset)
-        print("node count: ", get_structure_stats_dict(spmn)["nodes"])
-        valus = learner(spmn, 100)
-
-        env = get_env(dataset)
-
-        state = env.reset()
-
-        spmn_dec_list = []
-        while (True):
-            action = best_next_decision(spmn, state)[0][0]
-            spmn_dec_list.append(action)
-            state, reward, done = env.step(action)
-            if done:
-                break
-
-        print("spmn Decision List: ", spmn_dec_list)
-        state = env.reset()
-
-        print("cspmn Decision Dictionary: ", credal_best_next_decisions(valus, state,env))
-        print("Number of Same nodes across CSPMN: ", child_parser(valus) / len(valus))
-
-        feature_names = get_feature_names(dataset)
-        test_data = [[np.nan] * len(feature_names)]
-
-        m = meu(spmn, test_data)
-        q = sum([meu(p, test_data)[0] for p in valus]) / len(valus)
-
-        meus = (m[0])
-
-        print("meus: ", meus)
-        print("Cmeus: ", q, "\n\n====================\n")
-
-        feature_labels = get_feature_labels(dataset)
-        if dataset == "Export_Textiles":
-            plot_spn(valus[4], 'cspmn.pdf', feature_labels=feature_labels)
-            plot_spn(valus[3], 'spmn.pdf', feature_labels=feature_labels)
-
-
-
-
-
-datas=['Export_Textiles', 'Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
-
-
-#credal_tester(datas)
-from cascading_spmn import caSpmn
-
-cascading = caSpmn("Export_Textiles")
-print("cascading created")
-cascading.learn()
-
-env = get_env("Export_Textiles")
-state = env.reset()
-
-print(cascading.cascading_best_next_decision(state)[0][0])
-
-#print(get_reward(dataset,spmn))
-
+    return dominant_action,credal_value
 
 
 

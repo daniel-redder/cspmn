@@ -1,4 +1,4 @@
-from main import learner, getSPMN
+
 
 import numpy as np
 
@@ -38,6 +38,8 @@ import time
 import pickle
 from tqdm import tqdm
 from main_testing import child_parser
+from cspmn import learner
+from cspmn import buildSPMN, credal_best_next_decision
 
 
 
@@ -54,6 +56,11 @@ class caSpmn():
         if weight[0]==42:self.weight = [.5*number_of_credals for x in number_of_sets]
         else: self.weight = weight
 
+        #spmns = self.buildSpmns()
+        #self.sets = self.credalize(spmns)
+
+
+    def learn(self):
         spmns = self.buildSpmns()
         self.sets = self.credalize(spmns)
 
@@ -67,9 +74,11 @@ class caSpmn():
     def buildSpmns(self):
         spmn_bucket = []
         for i in tqdm(range(self.number_of_sets)):
-            spmn_bucket.append(getSPMN(self.dataset))
+            spmn_bucket.append(buildSPMN())
 
         return spmn_bucket
+
+
 
 
     def cascading_best_next_decision(self,state):
@@ -87,28 +96,7 @@ class caSpmn():
         return dominant_decisions[0]
 
 
-    def credal_best_next_decision(self,cspmn_list,state):
-        decisions = {}
 
-        for cspmn in cspmn_list:
-            spmn_output = best_next_decision(cspmn, state)
-            action = spmn_output[0][0]
-
-            if action in decisions:
-                decisions[action] = decisions[action] + 1
-            else:
-                decisions[action] = 1
-
-        dominant_action = None
-        credal_value = 0
-        curr_state_decisions = decisions
-        for x in curr_state_decisions:
-            if curr_state_decisions[x] > credal_value:
-                dominant_action = x
-                credal_value = curr_state_decisions[x]
-
-
-        return dominant_action,credal_value
 
 
 
