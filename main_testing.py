@@ -47,18 +47,19 @@ from tqdm import tqdm
 #Purely For Testing Purposes (Iterates through all children in a list of spmns printing similar weights
 def child_parser(curr_node_list, depth = 0,counter=0):
     curr_node_parser = curr_node_list[0]
-    if (not hasattr(curr_node_parser, "children")): return True
-    if (not curr_node_parser.children): return True
+    if (not hasattr(curr_node_parser, "children")): return counter
+    if (not curr_node_parser.children): return counter
 
     if isinstance(curr_node_parser, Sum):
         testList = curr_node_parser.weights
         for i in range(0,len(testList)):
             for x in curr_node_list[1:]:
-                if x.weights[i] == testList[i]: counter+=1
-
+                if x.weights[i] == testList[i]: counter=1+counter
+                #print(x.weights[i],testList[i],counter)
 
     for i in range(0, len(curr_node_parser.children)):
-        child_parser([node.children[i] for node in curr_node_list],depth+1)
+        counter = child_parser([node.children[i] for node in curr_node_list],depth+1,counter)
 
+    #print(counter)
     return counter
 

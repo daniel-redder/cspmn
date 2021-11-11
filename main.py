@@ -77,13 +77,13 @@ def learnCSPMNs(curr_node_list=[]):
 
 
             #Random normalized weights
-            #curr_node.weights=cont.e_contam(curr_node)
+            curr_node.weights=cont.e_contam(curr_node)
 
 
             #Make one random node be 1.0 weighted and the rest 0
             #============================================================
-            curr_node.weights=[0 for x in curr_node.weights]
-            curr_node.weights[random.randint(0,len(curr_node.weights)-1)]=1.0
+            #curr_node.weights=[0 for x in curr_node.weights]
+            #curr_node.weights[random.randint(0,len(curr_node.weights)-1)]=1.0
             #==============================================================
             #print("post",curr_node.weights)
 
@@ -106,16 +106,16 @@ def learner(spmn, n=10):
 #plot_spn(valus[0],'spmn.pdf', feature_labels=feature_labels)
 
 from collections import defaultdict
-def credal_best_next_decision(cspmn_list, state):
+def credal_best_next_decision(cspmn_list, state,env):
     decisions = {}
     state_iterator = 0
     env.reset()
     while(True):
         decisions[state_iterator] = {}
         for cspmn in cspmn_list:
-            spmn_output = best_next_decision(spmn,state)
+            spmn_output = best_next_decision(cspmn,state)
             action = spmn_output[0][0]
-            #print(decision)
+            #print(action)
 
             if action in decisions[state_iterator]: decisions[state_iterator][action] = decisions[state_iterator][action]+1
             else: decisions[state_iterator][action]=1
@@ -203,59 +203,59 @@ def getSPMN(dataset):
     return spmn
 
 
-datas=["Export_Textiles"]
+def credal_tester(datas):
+    for dataset in datas:
+        # buildSPMN(dataset)
+        print(f"Dataset: {dataset}")
+        spmn = getSPMN(dataset)
+        print("node count: ", get_structure_stats_dict(spmn)["nodes"])
+        valus = learner(spmn, 100)
+
+        env = get_env(dataset)
+
+        state = env.reset()
+
+        spmn_dec_list = []
+        while (True):
+            action = best_next_decision(spmn, state)[0][0]
+            spmn_dec_list.append(action)
+            state, reward, done = env.step(action)
+            if done:
+                break
+
+        print("spmn Decision List: ", spmn_dec_list)
+        state = env.reset()
+
+        print("cspmn Decision Dictionary: ", credal_best_next_decision(valus, state,env))
+        print("Number of Same nodes across CSPMN: ", child_parser(valus) / len(valus))
+
+        feature_names = get_feature_names(dataset)
+        test_data = [[np.nan] * len(feature_names)]
+
+        m = meu(spmn, test_data)
+        q = sum([meu(p, test_data)[0] for p in valus]) / len(valus)
+
+        meus = (m[0])
+
+        print("meus: ", meus)
+        print("Cmeus: ", q, "\n\n====================\n")
+
+        feature_labels = get_feature_labels(dataset)
+        if dataset == "Export_Textiles":
+            plot_spn(valus[4], 'cspmn.pdf', feature_labels=feature_labels)
+            plot_spn(valus[3], 'spmn.pdf', feature_labels=feature_labels)
+
+
+
 
 
 datas=['Export_Textiles', 'Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
 
-#print("Learning Stopped")
+
+credal_tester(datas)
 
 
 
-
-
-
-for dataset in datas:
-    #buildSPMN(dataset)
-    print(f"Dataset: {dataset}")
-    spmn = getSPMN(dataset)
-    print("node count: ",get_structure_stats_dict(spmn)["nodes"])
-    valus = learner(spmn,100)
-    env = get_env(dataset)
-
-
-    state = env.reset()
-
-
-    spmn_dec_list = []
-    while(True):
-        action = best_next_decision(spmn,state)[0][0]
-        spmn_dec_list.append(action)
-        state, reward, done=env.step(action)
-        if done:
-            break
-
-    print("spmn Decision List: ",spmn_dec_list)
-    state = env.reset()
-
-    print("cspmn Decision Dictionary: ",credal_best_next_decision(valus,state))
-    print("Number of Same nodes across CSPMN: ",child_parser(valus))
-
-    feature_names = get_feature_names(dataset)
-    test_data = [[np.nan] * len(feature_names)]
-
-    m = meu(spmn, test_data)
-    q=sum([meu(p,test_data)[0] for p in valus])/len(valus)
-
-    meus = (m[0])
-
-    print("meus: ",meus)
-    print("Cmeus: ",q,"\n\n====================\n")
-
-    feature_labels = get_feature_labels(dataset)
-    if dataset == "Export_Textiles":
-        plot_spn(valus[4],'cspmn.pdf', feature_labels=feature_labels)
-        plot_spn(valus[3],'spmn.pdf', feature_labels=feature_labels)
 
 
 #print(get_reward(dataset,spmn))
