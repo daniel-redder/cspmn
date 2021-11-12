@@ -44,7 +44,7 @@ import pickle
 datasets = ['Export_Textiles', 'HIV_Screening', 'Powerplant_Airpollution', 'Computer_Diagnostician', 'Test_Strep',
             'LungCancer_Staging']
 # datasets = []
-datasets = ['SkillTeaching']
+datasets = ['Computer_Diagnostician']
 path = "new_results_depth1"
 
 

@@ -14,7 +14,7 @@ import logging
 import numpy as np
 
 from spn.algorithms.TransformStructure import Prune
-
+from spn.algorithms.splitting.Base import split_all_cols
 
 class SPMN:
 
@@ -135,7 +135,11 @@ class SPMN:
                 ds_context = get_ds_context(remaining_vars_data, remaining_vars_scope, self.params)
 
                 split_cols = get_split_cols_RDC_py()
-                data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope)
+                #data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope)
+                # data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope)
+                    # Modified - DR
+                data_slices_prod = split_all_cols(remaining_vars_data, remaining_vars_scope)
+
 
                 logging.debug(f'{len(data_slices_prod)} slices found at data_slices_prod: ')
 

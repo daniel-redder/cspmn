@@ -61,6 +61,9 @@ class caSpmn():
 
 
     def learn(self):
+
+        if self.getCascasing(): return None
+
         spmns = self.buildSpmns()
 
         with open("non_credal_spmns.pickle","wb") as f:
@@ -73,9 +76,9 @@ class caSpmn():
 
     def credalize(self,spmns):
         sets = []
-        for i in range(spmns):
+        for i in range(len(spmns)):
             sets.append(learner(spmns[i],self.number_of_credals))
-
+        return sets
 
     def buildSpmns(self):
         spmn_bucket = []
@@ -86,13 +89,18 @@ class caSpmn():
         return spmn_bucket
 
 
+    def getCascasing(self):
+        if(not os.path.exists("credal_spmns.pickle")): return False
+        with open(f"credal_spmns.pickle", "rb") as file:
+            self.sets = pickle.load(file)
+        return True
 
 
     def cascading_best_next_decision(self,state):
         credal_values = []
         dominant_decisions = []
         for cspmn_list in self.sets:
-            decision, value = self.credal_best_next_decision(cspmn_list,state)
+            decision, value = credal_best_next_decision(cspmn_list,state)
             dominant_decisions.append(decision)
             credal_values.append(value)
 
