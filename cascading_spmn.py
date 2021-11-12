@@ -53,7 +53,7 @@ class caSpmn():
         self.number_of_sets = number_of_sets
         self.number_of_credals = number_of_credals
 
-        if weight[0]==42:self.weight = [.5*number_of_credals for x in number_of_sets]
+        if weight[0]==42:self.weight = [.5*number_of_credals for x in range(number_of_sets)]
         else: self.weight = weight
 
         #spmns = self.buildSpmns()
@@ -62,8 +62,14 @@ class caSpmn():
 
     def learn(self):
         spmns = self.buildSpmns()
+
+        with open("non_credal_spmns.pickle","wb") as f:
+            pickle.dump(spmns, f)
+
         self.sets = self.credalize(spmns)
 
+        with open("credal_spmns.pickle","wb") as f:
+            pickle.dump(self.sets,f)
 
     def credalize(self,spmns):
         sets = []
@@ -74,7 +80,8 @@ class caSpmn():
     def buildSpmns(self):
         spmn_bucket = []
         for i in tqdm(range(self.number_of_sets)):
-            spmn_bucket.append(buildSPMN())
+            spmn_bucket.append(buildSPMN(self.dataset))
+
 
         return spmn_bucket
 

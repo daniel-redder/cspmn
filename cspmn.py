@@ -1,3 +1,4 @@
+import math
 
 import numpy as np
 
@@ -37,6 +38,10 @@ import time
 import pickle
 from tqdm import tqdm
 from main_testing import child_parser
+
+#TODO Dynamic recursion limit?  How is this handeled by Swaraj?
+sys.setrecursionlimit(1000000000)
+
 
 class contaminator():
     def __init__(self):
