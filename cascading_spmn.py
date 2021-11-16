@@ -60,13 +60,14 @@ class caSpmn():
         #self.sets = self.credalize(spmns)
 
 
-    def learn(self):
+    def learn(self,force_make_new=False):
 
-        if self.getCascasing(): return None
+        if not force_make_new:
+            if self.getCascasing(): return None
 
         spmns = self.buildSpmns()
 
-        with open("non_credal_spmns.pickle","wb") as f:
+        with open("models/non_credal_spmns.pickle", "wb") as f:
             pickle.dump(spmns, f)
 
         self.sets = self.credalize(spmns)

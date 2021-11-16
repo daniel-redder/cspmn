@@ -255,17 +255,35 @@ datas=['Export_Textiles', 'Powerplant_Airpollution', 'HIV_Screening', 'Computer_
 #credal_tester(datas)
 from cascading_spmn import caSpmn
 
-cascading = caSpmn("Export_Textiles")
-print("cascading created")
-cascading.learn()
 
-env = get_env("Export_Textiles")
-state = env.reset()
+def createCredalSPMNSets():
+    for dataset in datas:
+        cascading = caSpmn(dataset)
+        print(dataset)
+        cascading.learn()
 
-print(cascading.cascading_best_next_decision(state))
-feature_labels = get_feature_labels("Export_Textiles")
-for x in range(len(cascading.sets)):
-    plot_spn(cascading.sets[x][0],f"graphs/cspmn{x}.png",feature_labels=feature_labels)
+        env = get_env(dataset)
+        state = env.reset()
+
+        print(cascading.cascading_best_next_decision(state))
+
+        with open(f"models_credal_{dataset}.pickle","wb+") as fp:
+            pickle.dump(cascading.sets[0],fp)
+
+
+for dataset in datas:
+    cascading = caSpmn(dataset)
+    print(dataset)
+    cascading.learn(force_make_new=True)
+
+    env = get_env(dataset)
+    state = env.reset()
+
+    print(cascading.cascading_best_next_decision(state))
+
+    feature_labels = get_feature_labels(dataset)
+#
+    plot_spn(cascading.sets[0][0],f"graphs/cspmn{dataset}.png",feature_labels=feature_labels)
 
 
 #print(get_reward(dataset,spmn))
