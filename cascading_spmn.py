@@ -47,12 +47,12 @@ from cspmn import buildSPMN, credal_best_next_decision
 class caSpmn():
 
     #built from SPMN
-    def __init__(self, dataset, number_of_sets=4, number_of_credals=10, weight=[42]):
+    def __init__(self, dataset, number_of_sets=2,vers=["naive","naive"] ,number_of_credals=10, weight=[42]):
         self.dataset = dataset
         self.cspmns = []
         self.number_of_sets = number_of_sets
         self.number_of_credals = number_of_credals
-
+        self.vers = vers
         if weight[0]==42:self.weight = [.5*number_of_credals for x in range(number_of_sets)]
         else: self.weight = weight
 
@@ -66,6 +66,8 @@ class caSpmn():
             if self.getCascasing(): return None
 
         spmns = self.buildSpmns()
+
+        self.spmns = spmns.copy()
 
         with open("models/non_credal_spmns.pickle", "wb") as f:
             pickle.dump(spmns, f)
@@ -84,7 +86,7 @@ class caSpmn():
     def buildSpmns(self):
         spmn_bucket = []
         for i in tqdm(range(self.number_of_sets)):
-            spmn_bucket.append(buildSPMN(self.dataset))
+            spmn_bucket.append(buildSPMN(self.dataset,self.vers[i]))
 
 
         return spmn_bucket
@@ -106,10 +108,10 @@ class caSpmn():
             credal_values.append(value)
 
         for x in range(len(credal_values)):
-            if(credal_values[x] >= self.weight[x]): return dominant_decisions[x]
+            if(credal_values[x] >= self.weight[x]): return dominant_decisions[x], dominant_decisions, credal_values
 
         #TODO for reality this would be replaced with a default decision, or alternative decision system
-        return dominant_decisions[0]
+        return dominant_decisions[0],dominant_decisions,credal_values
 
 
 

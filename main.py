@@ -168,8 +168,7 @@ def get_reward(dataset,spmn):
 #TODO Thread it
 
 #TODO turn it into real e_contamination
-#TODO Test to make sure that it generates semi-unique cspmns (currently unsure)
-#Build multiple credal SPMNs from one pass through (Done)
+#TODO fix RDC infinite Loop error, and g-test weirdness
 
 
 
@@ -270,20 +269,29 @@ def createCredalSPMNSets():
         with open(f"models_credal_{dataset}.pickle","wb+") as fp:
             pickle.dump(cascading.sets[0],fp)
 
+def caspmn_new_full_test(datas):
+    for dataset in datas:
+        print(get_partial_order(dataset))
+        cascading = caSpmn(dataset,number_of_credals=1000)
+        print(dataset)
+        cascading.learn(force_make_new=True)
 
-for dataset in datas:
-    cascading = caSpmn(dataset)
-    print(dataset)
-    cascading.learn(force_make_new=True)
+        env = get_env(dataset)
+        state = env.reset()
 
-    env = get_env(dataset)
-    state = env.reset()
+        decision, decisionList, credalList =  cascading.cascading_best_next_decision(state)
 
-    print(cascading.cascading_best_next_decision(state))
+        print(decisionList, credalList)
 
-    feature_labels = get_feature_labels(dataset)
-#
-    plot_spn(cascading.sets[0][0],f"graphs/cspmn{dataset}.png",feature_labels=feature_labels)
+
+
+        feature_labels = get_feature_labels(dataset)
+
+        with open("output/credal_values.txt","a+") as fp:
+            fp.write(f"{dataset},{decision},{decisionList},{credalList},spmn:{best_next_decision(cascading.spmns[0],state)[0][0]}\n")
+
+        #plot_spn(cascading.sets[0][0],f"graphs/naive_cspmn{dataset}.png",feature_labels=feature_labels)
+        #plot_spn(cascading.spmns[0],f"graphs/naive_spmn{dataset}.png",feature_labels=feature_labels)
 
 
 #print(get_reward(dataset,spmn))

@@ -102,7 +102,7 @@ def learner(spmn, n=10):
 
 
 
-def buildSPMN(dataset):
+def buildSPMN(dataset,ver):
     partial_order = get_partial_order(dataset)
     utility_node = get_utilityNode(dataset)
     decision_nodes = get_decNode(dataset)
@@ -119,7 +119,7 @@ def buildSPMN(dataset):
 
     # print("Start Learning...")
     spmn = SPMN(partial_order, decision_nodes, utility_node, feature_names, meta_types,
-                cluster_by_curr_information_set=True, util_to_bin=False)
+                cluster_by_curr_information_set=True, util_to_bin=False,ver=ver)
 
     spmn = spmn.learn_spmn(train)
 

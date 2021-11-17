@@ -229,7 +229,7 @@ def rdc_transformer(
 	N, D = local_data.shape
 
 	if rand_gen is None:
-		rand_gen = np.random.RandomState(17)
+		rand_gen = np.random.RandomState(100)
 
 	#
 	# precomputing transformations to reduce time complexity

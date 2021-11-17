@@ -15,11 +15,12 @@ import numpy as np
 
 from spn.algorithms.TransformStructure import Prune
 from spn.algorithms.splitting.Base import split_all_cols
+from spn.algorithms.splitting.ParametricTests import get_split_cols_GTest
 
 class SPMN:
 
     def __init__(self, partial_order, decision_nodes, utility_node, feature_names,
-            meta_types, cluster_by_curr_information_set=False, util_to_bin=False):
+            meta_types, cluster_by_curr_information_set=False, util_to_bin=False,ver="gtest"):
 
         self.params = SPMNParams(
                 partial_order,
@@ -30,6 +31,7 @@ class SPMN:
                 util_to_bin
             )
         self.op = 'Any'
+        self.ver = ver
         self.cluster_by_curr_information_set = cluster_by_curr_information_set
         self.spmn_structure = None
 
@@ -135,10 +137,19 @@ class SPMN:
                 ds_context = get_ds_context(remaining_vars_data, remaining_vars_scope, self.params)
 
                 split_cols = get_split_cols_RDC_py()
-                #data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope)
-                # data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope)
+                gtest_split = get_split_cols_GTest()
+                if(self.ver == "RDC"):
+                    data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope)
                     # Modified - DR
-                data_slices_prod = split_all_cols(remaining_vars_data, remaining_vars_scope)
+                elif(self.ver == "gtest"):
+                    data_slices_prod = gtest_split(remaining_vars_data,ds_context,remaining_vars_scope)
+
+                #Naive splitting
+                else:
+                    data_slices_prod = split_all_cols(remaining_vars_data, remaining_vars_scope)
+
+
+
 
 
                 logging.debug(f'{len(data_slices_prod)} slices found at data_slices_prod: ')

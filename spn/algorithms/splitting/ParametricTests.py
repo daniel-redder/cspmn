@@ -15,13 +15,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@numba.njit
+#@numba.njit
 def count_nonzero(array):
     nonzero_coords, = np.nonzero(array)
     return len(nonzero_coords)
 
 
-@numba.njit
+#@numba.njit
 def g_test(feature_id_1, feature_id_2, local_data, feature_vals, g_factor):
     """
     Applying a G-test on the two features (represented by ids) on the data
@@ -90,7 +90,7 @@ def g_test(feature_id_1, feature_id_2, local_data, feature_vals, g_factor):
     return (2 * g_val) < dep_val
 
 
-@numba.jit
+#@numba.jit
 def gtest_greedy_feature_split(local_data, feature_vals, g_factor, rand_gen):
     """
     Implementing the G-test based feature splitting as in
@@ -148,9 +148,9 @@ def gtest_greedy_feature_split(local_data, feature_vals, g_factor, rand_gen):
     return dependent_features.astype(np.int)
 
 
-def get_split_cols_GTest(threshold=0.05, rand_gen=None):
+def get_split_cols_GTest(threshold=0.05):
     def split_cols_GTest(local_data, ds_context, scope):
-
+        rand_gen = np.random.RandomState(100)
         domains = ds_context.domains
         clusters = gtest_greedy_feature_split(local_data, domains, threshold, rand_gen)
         return split_data_by_clusters(local_data, clusters, scope, rows=False)
