@@ -248,7 +248,7 @@ def credal_tester(datas):
 
 
 
-datas=['Export_Textiles', 'Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
+datas=['Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
 
 
 #credal_tester(datas)
@@ -272,7 +272,7 @@ def createCredalSPMNSets():
 def caspmn_new_full_test(datas):
     for dataset in datas:
         print(get_partial_order(dataset))
-        cascading = caSpmn(dataset,number_of_credals=1000)
+        cascading = caSpmn(dataset,number_of_credals=1000,vers=["","RDC"])
         print(dataset)
         cascading.learn(force_make_new=True)
 
@@ -288,7 +288,7 @@ def caspmn_new_full_test(datas):
         feature_labels = get_feature_labels(dataset)
 
         with open("output/credal_values.txt","a+") as fp:
-            fp.write(f"{dataset},{decision},{decisionList},{credalList},spmn:{best_next_decision(cascading.spmns[0],state)[0][0]}\n")
+            fp.write(f"{dataset},{decision},{decisionList},{credalList},{best_next_decision(cascading.spmns[0],state)[0][0]}\n")
 
         #plot_spn(cascading.sets[0][0],f"graphs/naive_cspmn{dataset}.png",feature_labels=feature_labels)
         #plot_spn(cascading.spmns[0],f"graphs/naive_spmn{dataset}.png",feature_labels=feature_labels)
@@ -296,7 +296,7 @@ def caspmn_new_full_test(datas):
 
 #print(get_reward(dataset,spmn))
 
-
+caspmn_new_full_test(datas)
 
 
 

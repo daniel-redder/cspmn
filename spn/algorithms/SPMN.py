@@ -5,7 +5,7 @@ Created on March 28, 2019
 """
 from spn.structure.Base import Sum, Product, Max
 from spn.structure.Base import assign_ids, rebuild_scopes_bottom_up
-from spn.algorithms.splitting.RDC import get_split_cols_RDC_py
+from spn.algorithms.splitting.RDC import get_split_cols_RDC_py, get_split_cols_distributed_RDC_py1
 from spn.algorithms.LearningWrappers import learn_mspn, learn_parametric, learn_mspn_for_spmn
 from spn.algorithms.SPMNHelper import get_ds_context, column_slice_data_by_scope, \
                                       split_on_decision_node, get_split_rows_KMeans, \
@@ -20,7 +20,7 @@ from spn.algorithms.splitting.ParametricTests import get_split_cols_GTest
 class SPMN:
 
     def __init__(self, partial_order, decision_nodes, utility_node, feature_names,
-            meta_types, cluster_by_curr_information_set=False, util_to_bin=False,ver="gtest"):
+            meta_types, cluster_by_curr_information_set=False, util_to_bin=False,ver="RDC"):
 
         self.params = SPMNParams(
                 partial_order,
@@ -134,12 +134,17 @@ class SPMN:
             if curr_op != 'Sum':    # fails if correlated variable set found in previous recursive call.
                                     # Without this condition code keeps looping at this stage
 
+                #print(remaining_vars_scope)
+               # print(remaining_vars_data.shape)
                 ds_context = get_ds_context(remaining_vars_data, remaining_vars_scope, self.params)
-
-                split_cols = get_split_cols_RDC_py()
+                print(len(remaining_vars_scope))
+                #So it causes this issue when the "n" limiting value is based on the size of the reminaing vars scope which
+                #doesn't particularly make sense because it should be reducing it yes?
+                                    #So now we shall read up on "n" and check that this isn't a fluke of the dataset.
+                split_cols = get_split_cols_distributed_RDC_py1(rand_gen=None, ohe=False, n_jobs=-1, n=round(len(remaining_vars_scope)))
                 gtest_split = get_split_cols_GTest()
                 if(self.ver == "RDC"):
-                    data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope)
+                    data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope,rest_set_scope)
                     # Modified - DR
                 elif(self.ver == "gtest"):
                     data_slices_prod = gtest_split(remaining_vars_data,ds_context,remaining_vars_scope)
@@ -149,7 +154,7 @@ class SPMN:
                     data_slices_prod = split_all_cols(remaining_vars_data, remaining_vars_scope)
 
 
-
+                #print(data_slices_prod)
 
 
                 logging.debug(f'{len(data_slices_prod)} slices found at data_slices_prod: ')
@@ -163,9 +168,13 @@ class SPMN:
 
                     if any(var_scope in correlated_var_set_scope for var_scope in rest_set_scope):
 
+                        print(correlated_var_set_scope)
+
                         next_remaining_vars_scope.extend(correlated_var_set_scope)
 
                     else:
+                        print("independent: ")
+                        print(correlated_var_set_scope)
                         # this variable set of current information set is
                         # not correlated to any variable in the rest set
 
@@ -217,6 +226,7 @@ class SPMN:
 
                 self.set_next_operation('Sum')
 
+                #correct variable ordering
                 next_remaining_vars_data = column_slice_data_by_scope(remaining_vars_data,
                                                                       remaining_vars_scope,
                                                                       next_remaining_vars_scope)
@@ -225,6 +235,8 @@ class SPMN:
                     f'independence test completed for current information set {curr_information_set_scope} '
                     f'and rest set {rest_set_scope} ')
 
+                print(next_remaining_vars_scope)
+                print("\n")
                 remaining_vars_prod_child = self.__learn_spmn_structure(next_remaining_vars_data,
                                                                         next_remaining_vars_scope,
                                                                         next_information_set_scope,
@@ -243,7 +255,7 @@ class SPMN:
             else:
 
                 curr_op = self.get_curr_operation()
-                logging.debug(f'curr_op at sum node (cluster test): {curr_op}')
+               # print(f'curr_op at sum node (cluster test): {curr_op}')
 
                 split_rows = get_split_rows_KMeans()    # from SPMNHelper.py
 
@@ -260,6 +272,7 @@ class SPMN:
                     logging.info(f'split clusters based on current information set {curr_information_set_scope}')
 
                 else:
+
                     # cluster on whole remaining variables
                     ds_context_sum = get_ds_context(remaining_vars_data, remaining_vars_scope, self.params)
                     data_slices_sum, km_model = split_rows(remaining_vars_data, ds_context_sum, remaining_vars_scope)
