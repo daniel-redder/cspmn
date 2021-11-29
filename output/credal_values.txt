@@ -1,0 +1,7 @@
+Export_Textiles,1,[1, 1],[976, 969],spmn:1
+Powerplant_Airpollution,0.0,[0.0, 0.0],[551, 572],spmn:1.0
+HIV_Screening,1.0,[1.0, 1.0],[582, 605],spmn:0.0
+Computer_Diagnostician,1,[1, 1],[581, 597],spmn:0
+Test_Strep,0.0,[0.0, 1.0],[517, 510],spmn:0.0
+Export_Textiles,1,[1, 1],[978, 982],1
+Export_Textiles,1,[1, 1],[970, 975],1
