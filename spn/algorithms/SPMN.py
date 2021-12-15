@@ -20,7 +20,7 @@ from spn.algorithms.splitting.ParametricTests import get_split_cols_GTest
 class SPMN:
 
     def __init__(self, partial_order, decision_nodes, utility_node, feature_names,
-            meta_types, cluster_by_curr_information_set=False, util_to_bin=False,ver="RDC"):
+            meta_types, cluster_by_curr_information_set=True, util_to_bin=False,ver="RDC"):
 
         self.params = SPMNParams(
                 partial_order,
@@ -141,7 +141,7 @@ class SPMN:
                 #So it causes this issue when the "n" limiting value is based on the size of the reminaing vars scope which
                 #doesn't particularly make sense because it should be reducing it yes?
                                     #So now we shall read up on "n" and check that this isn't a fluke of the dataset.
-                split_cols = get_split_cols_distributed_RDC_py1(rand_gen=None, ohe=False, n_jobs=-1, n=round(len(remaining_vars_scope)))
+                split_cols = get_split_cols_distributed_RDC_py1(rand_gen=None, ohe=False, n_jobs=-1, n=round(200))
                 gtest_split = get_split_cols_GTest()
                 if(self.ver == "RDC"):
                     data_slices_prod = split_cols(remaining_vars_data, ds_context, remaining_vars_scope,rest_set_scope)
