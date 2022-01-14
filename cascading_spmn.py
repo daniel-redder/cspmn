@@ -38,7 +38,7 @@ import time
 import pickle
 from tqdm import tqdm
 from main_testing import child_parser
-from cspmn import learner
+from cspmn import learnCSPMNs
 from cspmn import buildSPMN, credal_best_next_decision
 
 
@@ -59,11 +59,14 @@ class caSpmn():
         #spmns = self.buildSpmns()
         #self.sets = self.credalize(spmns)
 
-
+    """
+    inputs: force_make_new if true will forcibly generate new spmns rather than reading in pickles
+    Output: will train the "CASPMN" model via sets of credalized SPMNs/CSPMNs
+    """
     def learn(self,force_make_new=False):
 
         if not force_make_new:
-            if self.getCascasing(): return None
+            if self.getCascading(): return None
 
         spmns = self.buildSpmns()
 
@@ -72,33 +75,56 @@ class caSpmn():
         with open("models/non_credal_spmns.pickle", "wb") as f:
             pickle.dump(spmns, f)
 
-        self.sets = self.credalize(spmns)
+        self.sets = self.credalize()
 
         with open("credal_spmns.pickle","wb") as f:
             pickle.dump(self.sets,f)
 
-    def credalize(self,spmns):
+
+    """
+    Input: Structure learned SPMN
+    Output: List of Credalized SPMNs (through cspmn.py)
+    """
+    def learner(self,spmn):
+        curr_node_list = [copy.deepcopy(spmn) for x in range(self.number_of_credals)]
+        return learnCSPMNs(curr_node_list)
+
+    """
+    Input: List of SPMNs 
+    Output: a List of Sets of Credalized SPMNs
+    """
+    def credalize(self):
         sets = []
-        for i in range(len(spmns)):
-            sets.append(learner(spmns[i],self.number_of_credals))
+        for i in range(len(self.spmns)):
+            sets.append(self.learner(self.spmns[i]))
         return sets
 
+    """
+    TODO move this?
+    Input: list of datasets
+    Output: List of built SPMNs
+    """
     def buildSpmns(self):
         spmn_bucket = []
         for i in tqdm(range(self.number_of_sets)):
             spmn_bucket.append(buildSPMN(self.dataset,self.vers[i]))
 
-
         return spmn_bucket
 
-
-    def getCascasing(self):
+    """
+    Retrieve the credal SPMNs if they already exist
+    """
+    def getCascading(self):
         if(not os.path.exists("credal_spmns.pickle")): return False
         with open(f"credal_spmns.pickle", "rb") as file:
             self.sets = pickle.load(file)
         return True
 
-
+    """
+    Implementation of the "Best Next Decision" function of SPMNs for CASPMNs
+    Returns (for now) the first decision in the set with uncertainty greater than the "weight value" else returns the first decision, each decision, and the credal values of the decisions
+    TODO consider changing this to the decision with the greates robustness...
+    """
     def cascading_best_next_decision(self,state):
         credal_values = []
         dominant_decisions = []
@@ -107,6 +133,7 @@ class caSpmn():
             dominant_decisions.append(decision)
             credal_values.append(value)
 
+        #This should be working Need to test this
         for x in range(len(credal_values)):
             if(credal_values[x] >= self.weight[x]): return dominant_decisions[x], dominant_decisions, credal_values
 

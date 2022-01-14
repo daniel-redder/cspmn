@@ -40,7 +40,8 @@ from tqdm import tqdm
 from main_testing import child_parser
 
 #TODO Dynamic recursion limit?  How is this handeled by Swaraj?
-sys.setrecursionlimit(1000000000)
+#inplace for bug, doesn't solve bug though......
+#sys.setrecursionlimit(1000000000)
 
 
 class contaminator():
@@ -48,15 +49,21 @@ class contaminator():
         self.rng = numpy.random.default_rng()
 
     #random "contamination" not really "e" contamination yet
-
+    #currently performs normalized randoms through dirchlet distribution
     def e_contam(self, node):
         # contaminate them
         node.weights = self.rng.dirichlet(alpha=[random.randint(1,100) for x in node.weights])
         return node.weights
+
+#Generates contaminator object on file load
 cont = contaminator()
 
 
-
+"""
+Parser that visits every node in the SPMN checks if it is a sum node then contaminates the weights of sum nodes
+input: SPMN
+output: credalized spmn
+"""
 def learnCSPMNs(curr_node_list=[]):
     curr_node_parser = curr_node_list[0]
     if(not hasattr(curr_node_parser,"children")): return True
@@ -95,13 +102,16 @@ def learnCSPMNs(curr_node_list=[]):
 
     return curr_node_list
 
+"""
 def learner(spmn, n=10):
     curr_node_list = [copy.deepcopy(spmn) for x in range(n)]
     return learnCSPMNs(curr_node_list)
+"""
 
 
-
-
+"""
+Generates the SPMN given the independence testing method and the dataset
+"""
 def buildSPMN(dataset,ver):
     partial_order = get_partial_order(dataset)
     utility_node = get_utilityNode(dataset)
@@ -123,9 +133,15 @@ def buildSPMN(dataset,ver):
 
     spmn = spmn.learn_spmn(train)
 
+    #For Now all will be hardEMed for testing.
+    from spn.algorithms.EM import EM_optimization
+    EM_optimization(spmn,train,iterations=100)
+
     return spmn
 
-
+"""
+Performs decision making on a list of credalized spmns (neccesary for CASPMNs)
+"""
 def credal_best_next_decision(cspmn_list,state):
     decisions = {}
 

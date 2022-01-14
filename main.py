@@ -167,11 +167,12 @@ def get_reward(dataset,spmn):
 #Postprocessing Step to turn a spmn into a credal spmn
 #TODO Thread it
 
+#TODO Make trained SPMN undergo hardEM
 #TODO turn it into real e_contamination
 #TODO fix RDC infinite Loop error, and g-test weirdness
 
 
-
+"""Not Used Here
 def buildSPMN(dataset):
     partial_order = get_partial_order(dataset)
     utility_node = get_utilityNode(dataset)
@@ -194,13 +195,14 @@ def buildSPMN(dataset):
     spmn = spmn.learn_spmn(train)
 
     return spmn
+"""
 
-
+""" Not Used here
 def getSPMN(dataset):
     with open(f"spn/data/original_new/{dataset}/spmn_original.pkle","rb") as file:
         spmn = pickle.load(file)
     return spmn
-
+"""
 
 def credal_tester(datas):
     for dataset in datas:
@@ -248,13 +250,17 @@ def credal_tester(datas):
 
 
 
-datas=['Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
+datas=["Export_Textiles",'Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
 
 
 #credal_tester(datas)
 from cascading_spmn import caSpmn
 
 
+"""
+Function that is used in testing the generation of CASPMNs by plotting
+will plot one credal structure from the cascasing spmn for each dataset in "datas"
+"""
 def createCredalSPMNSets():
     for dataset in datas:
         cascading = caSpmn(dataset)
@@ -269,32 +275,42 @@ def createCredalSPMNSets():
         with open(f"models_credal_{dataset}.pickle","wb+") as fp:
             pickle.dump(cascading.sets[0],fp)
 
+
+"""
+Main Testing method
+Creates a cascading spmn with multiple variants of indpendence testing for product nodes
+Outputs a file which contains the decisions and majority vote of each spmn group as well as the original trained spmn
+"""
 def caspmn_new_full_test(datas):
     for dataset in datas:
         print(get_partial_order(dataset))
-        cascading = caSpmn(dataset,number_of_credals=1000)
+        cascading = caSpmn(dataset,number_of_credals=1000,vers=["naive","RDC"])
         print(dataset)
         cascading.learn(force_make_new=True)
 
         env = get_env(dataset)
         state = env.reset()
+        isDone = False
+        x=1
 
-        decision, decisionList, credalList =  cascading.cascading_best_next_decision(state)
+        while(not isDone):
 
-        print(decisionList, credalList)
+            decision, decisionList, credalList =  cascading.cascading_best_next_decision(state)
 
+            print(decisionList, credalList)
 
+            feature_labels = get_feature_labels(dataset)
 
-        feature_labels = get_feature_labels(dataset)
+            with open("output/credal_values.txt","a+") as fp:
+                fp.write(f"{dataset},{x},{decision},{decisionList},{credalList},{best_next_decision(cascading.spmns[1],state)[0][0]}\n")
 
-        with open("output/credal_values.txt","a+") as fp:
-            fp.write(f"{dataset},{decision},{decisionList},{credalList},{best_next_decision(cascading.spmns[0],state)[0][0]}\n")
-
+            x=x+1
         #plot_spn(cascading.sets[0][0],f"graphs/naive_cspmn{dataset}.png",feature_labels=feature_labels)
         #plot_spn(cascading.spmns[0],f"graphs/naive_spmn{dataset}.png",feature_labels=feature_labels)
+            state, reward, isDone = env.step(decision)
 
 
-#print(get_reward(dataset,spmn))
+
 
 caspmn_new_full_test(datas)
 
