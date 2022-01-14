@@ -203,7 +203,7 @@ def getSPMN(dataset):
         spmn = pickle.load(file)
     return spmn
 """
-
+"""
 def credal_tester(datas):
     for dataset in datas:
         # buildSPMN(dataset)
@@ -245,7 +245,7 @@ def credal_tester(datas):
         if dataset == "Export_Textiles":
             plot_spn(valus[4], 'cspmn.pdf', feature_labels=feature_labels)
             plot_spn(valus[3], 'spmn.pdf', feature_labels=feature_labels)
-
+"""
 
 
 
@@ -295,14 +295,14 @@ def caspmn_new_full_test(datas):
 
         while(not isDone):
 
-            decision, decisionList, credalList =  cascading.cascading_best_next_decision(state)
+            decision, decision_index ,decisionList, credalList =  cascading.cascading_best_next_decision(state)
 
             print(decisionList, credalList)
 
             feature_labels = get_feature_labels(dataset)
 
             with open("output/credal_values.txt","a+") as fp:
-                fp.write(f"{dataset},{x},{decision},{decisionList},{credalList},{best_next_decision(cascading.spmns[1],state)[0][0]}\n")
+                fp.write(f"{dataset},{x},{decision},{decision_index},{decisionList},{credalList},{best_next_decision(cascading.spmns[1],state)[0][0]}\n")
 
             x=x+1
         #plot_spn(cascading.sets[0][0],f"graphs/naive_cspmn{dataset}.png",feature_labels=feature_labels)

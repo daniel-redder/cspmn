@@ -135,7 +135,7 @@ class caSpmn():
 
         #This should be working Need to test this
         for x in range(len(credal_values)):
-            if(credal_values[x] >= self.weight[x]): return dominant_decisions[x], dominant_decisions, credal_values
+            if(credal_values[x] >= self.weight[x]): return dominant_decisions[x],x,dominant_decisions, credal_values
 
         #TODO for reality this would be replaced with a default decision, or alternative decision system
         return dominant_decisions[0],dominant_decisions,credal_values
