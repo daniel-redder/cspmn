@@ -1,7 +1,36 @@
+'''
+
+This Code is used to learn and evaluate
+the SPN models for the given datasets
+using the LearnSPN algorithm
+
+
+'''
 
 import numpy as np
 
+from spn.algorithms.StructureLearning import get_next_operation, learn_structure
+from spn.algorithms.CnetStructureLearning import get_next_operation_cnet, learn_structure_cnet
+from spn.algorithms.Validity import is_valid
+from spn.algorithms.Statistics import get_structure_stats_dict
+
+from spn.structure.Base import Sum, assign_ids
+
+from spn.structure.leaves.histogram.Histograms import create_histogram_leaf
+from spn.structure.leaves.parametric.Parametric import create_parametric_leaf
+from spn.structure.leaves.piecewise.PiecewiseLinear import create_piecewise_leaf
+from spn.structure.leaves.cltree.CLTree import create_cltree_leaf
+from spn.algorithms.splitting.Conditioning import (
+    get_split_rows_naive_mle_conditioning,
+    get_split_rows_random_conditioning,
+)
+
+from spn.algorithms.splitting.Clustering import get_split_rows_KMeans
+from spn.algorithms.splitting.RDC import get_split_cols_RDC_py
+from spn.algorithms.EM import EM_optimization
+from spn.io.ProgressBar import printProgressBar
 import logging
+from spn.algorithms.Inference import log_likelihood
 
 logger = logging.getLogger(__name__)
 
@@ -10,310 +39,121 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import pandas as pd
-from os import path as pth
-import sys, os
-import random
-import copy
-from sklearn.model_selection import train_test_split
-from spn.data.metaData import *
+from spn.structure.Base import Context
 from spn.structure.StatisticalTypes import MetaType
-from spn.algorithms.SPMNDataUtil import align_data
-from spn.algorithms.SPMN import SPMN
-from spn.structure.Base import Sum
-from spn.algorithms.MEU import meu
-from spn.algorithms.Inference import log_likelihood
 from spn.algorithms.Statistics import get_structure_stats_dict
-from spn.io.Graphics import plot_spn
-from spn.data.simulator import get_env
-from spn.algorithms.MEU import best_next_decision
-from spn.io.ProgressBar import printProgressBar
-import numpy
-import multiprocessing
 import matplotlib.pyplot as plt
 from os import path as pth
 import sys, os
-from collections import Counter
 import time
+import multiprocessing
 import pickle
-from tqdm import tqdm
-from main_testing import child_parser
 
+# Initialize parameters
 
+cols = "rdc"
+rows = "kmeans"
+min_instances_slice = 200
+threshold = 0.3
+ohe = False
+leaves = create_histogram_leaf
+rand_gen = None
+cpus = -1
 
+datasets = ["nltcs", "msnbc", "kdd", "baudio", "jester", "bnetflix"]
+# datasets = ['bnetflix']
+path = "original_new_opt"
 
-class contaminator():
-    def __init__(self):
-        self.rng = numpy.random.default_rng()
+# Create output directory
 
-    #random "contamination" not really "e" contamination yet
 
-    def e_contam(self, node):
-        # contaminate them
-        node.weights = self.rng.dirichlet(alpha=[random.randint(1,100) for x in node.weights])
-        return node.weights
-cont = contaminator()
 
-#input a node
+# Get log-likelihood for the instance
+def get_loglikelihood(instance):
+    test_data = np.array(instance).reshape(-1, var)
+    return log_likelihood(spn, test_data)[0][0]
 
 
 
 
+def buildSPN(dataset):
+    # Read training and test datasets
 
-def learnCSPMNs(curr_node_list=[]):
-    curr_node_parser = curr_node_list[0]
-    if(not hasattr(curr_node_parser,"children")): return True
-    if( not curr_node_parser.children): return True
-    #print(curr_node_parser.children)
-    #if(hasattr(curr_node_parser,"weights")): print(curr_node_parser.weights)
-    if isinstance(curr_node_parser,Sum):
-        #print("prior",curr_node_parser.weights)
-        for curr_node in curr_node_list:
-            #print("prior",curr_node.weights)
+    df = pd.read_csv(f"spn/data/binary/{dataset}.ts.data", sep=',')
+    train = df.values
+    df2 = pd.read_csv(f"spn/data/binary/{dataset}.test.data", sep=',')
+    test = df2.values
+    data = np.concatenate((train, test))
+    var = data.shape[1]
+    train, test = data, data
 
-            #TODO FIX THIS Duplication bug* ?
+    df3 = pd.read_csv(f"spn/data/binary/{dataset}.valid.data", sep=',')
+    valid = df3.values
 
-            #equal normalized weights
-            #curr_node.weights = [1/len(curr_node.weights) for x in curr_node.weights]
+    ds_context = Context(meta_types=[MetaType.DISCRETE] * train.shape[1])
+    ds_context.add_domains(train)
 
+    # Initialize splitting functions and next operation
+    split_cols = get_split_cols_RDC_py(rand_gen=rand_gen, ohe=ohe, n_jobs=cpus)
+    split_rows = get_split_rows_KMeans()
+    nextop = get_next_operation(min_instances_slice)
 
-            #Random normalized weights
-            curr_node.weights=cont.e_contam(curr_node)
+    # Learn the spn
+    print('\nStart Learning...')
+    start = time.time()
+    spn = learn_structure(train, ds_context, split_rows, split_cols, leaves, nextop)
+    end = time.time()
+    print('SPN Learned!\n')
 
+    print(f'Runtime: {end-start}')
 
-            #Make one random node be 1.0 weighted and the rest 0
-            #============================================================
-            #curr_node.weights=[0 for x in curr_node.weights]
-            #curr_node.weights[random.randint(0,len(curr_node.weights)-1)]=1.0
-            #==============================================================
-            #print("post",curr_node.weights)
+    #inplace hardEM operation
+    EM_optimization(spn, valid)
 
-        #print("post",curr_node_parser.weights)
-    #Old method for single CSPMN generation
-    #for child_node in curr_node.children: learnCSPMNs(child_node,n)
+    with open(f"{path}/models/spn_{dataset}.pkle", 'wb') as file:
+        pickle.dump(spn, file)
 
-    for i in range(0,len(curr_node_parser.children)):
-        #print(f"learning child {i}")
-        learnCSPMNs([node.children[i] for node in curr_node_list])
+    return spn, train, test, var
 
-    return curr_node_list
+# Learn SPNs form each dataset
+for dataset in datasets:
 
-def learner(spmn, n=10):
-    curr_node_list = [copy.deepcopy(spmn) for x in range(n)]
-    return learnCSPMNs(curr_node_list)
+    print(f"\n\n\n{dataset}\n\n\n")
+    if not pth.exists(f'{path}/models'):
+        try:
+            os.makedirs(f'{path}/models')
+        except OSError:
+            print("Creation of the directory %s failed" % path)
+            sys.exit()
 
+    spn, train, test, var = buildSPN(dataset)
 
+    nodes = get_structure_stats_dict(spn)["nodes"]
 
-#plot_spn(valus[0],'spmn.pdf', feature_labels=feature_labels)
 
-from collections import defaultdict
-def credal_best_next_decisions(cspmn_list, state,env):
-    decisions = {}
-    state_iterator = 0
-    env.reset()
-    while(True):
-        decisions[state_iterator] = {}
-        for cspmn in cspmn_list:
-            spmn_output = best_next_decision(cspmn,state)
-            action = spmn_output[0][0]
-            #print(action)
+    batches = 10
+    pool = multiprocessing.Pool()
+    batch_size = int(len(test) / batches)
+    batch = list()
+    total_ll = 0
+    for j in range(batches):
+        test_slice = test[j * batch_size:(j + 1) * batch_size]
+        lls = pool.map(get_loglikelihood, test_slice)
+        total_ll += sum(lls)
+        printProgressBar(j + 1, batches, prefix=f'Evaluation Progress:', suffix='Complete', length=50)
 
-            if action in decisions[state_iterator]: decisions[state_iterator][action] = decisions[state_iterator][action]+1
-            else: decisions[state_iterator][action]=1
+    ll = total_ll / len(test)
 
-        dominant_action = None
-        credal_value = 0
-        curr_state_decisions=decisions[state_iterator]
-        for x in curr_state_decisions:
-            if curr_state_decisions[x]>credal_value:
-                dominant_action = x
-                credal_value = curr_state_decisions[x]
+    # Print and save stats
+    print("\n\n\n\n\n")
+    print("#Nodes: ", nodes)
+    print("Log-likelihood: ", ll)
 
-        curr_state, reward, done=env.step(dominant_action)
-        state = curr_state
-        state_iterator+=1
-        if done:
-            break
-
-    return decisions
-
-
-
-def get_reward(dataset,spmn):
-    # policy = ""
-    env = get_env(dataset)
-    state = env.reset()
-    while (True):
-        output = best_next_decision(spmn, state)
-        print(output)
-        action = output[0][0]
-        # policy += f"{action}  "
-        state, reward, done = env.step(action)
-        if done:
-            return reward
-        # return policy
-
-
-
-
-#dataset = "Elevators"
-
-
-
-
-
-
-
-
-#Postprocessing Step to turn a spmn into a credal spmn
-#TODO Thread it
-
-#TODO Make trained SPMN undergo hardEM
-#TODO turn it into real e_contamination
-#TODO fix RDC infinite Loop error, and g-test weirdness
-
-
-"""Not Used Here
-def buildSPMN(dataset):
-    partial_order = get_partial_order(dataset)
-    utility_node = get_utilityNode(dataset)
-    decision_nodes = get_decNode(dataset)
-    feature_names = get_feature_names(dataset)
-    feature_labels = get_feature_labels(dataset)
-    meta_types = [MetaType.DISCRETE] * (len(feature_names) - 1) + [MetaType.UTILITY]
-
-    df = pd.read_csv(f"spn/data/{dataset}/{dataset}.tsv", sep='\t')
-
-    df, column_titles = align_data(df, partial_order)  # aligns data in partial order sequence
-
-    data = df.values
-    train, test = data, np.array(random.sample(list(data), int(data.shape[0] * 0.02)))
-
-    #print("Start Learning...")
-    spmn = SPMN(partial_order, decision_nodes, utility_node, feature_names, meta_types,
-                cluster_by_curr_information_set=True, util_to_bin=False)
-
-    spmn = spmn.learn_spmn(train)
-
-    return spmn
-"""
-
-""" Not Used here
-def getSPMN(dataset):
-    with open(f"spn/data/original_new/{dataset}/spmn_original.pkle","rb") as file:
-        spmn = pickle.load(file)
-    return spmn
-"""
-"""
-def credal_tester(datas):
-    for dataset in datas:
-        # buildSPMN(dataset)
-        print(f"Dataset: {dataset}")
-        spmn = getSPMN(dataset)
-        print("node count: ", get_structure_stats_dict(spmn)["nodes"])
-        valus = learner(spmn, 100)
-
-        env = get_env(dataset)
-
-        state = env.reset()
-
-        spmn_dec_list = []
-        while (True):
-            action = best_next_decision(spmn, state)[0][0]
-            spmn_dec_list.append(action)
-            state, reward, done = env.step(action)
-            if done:
-                break
-
-        print("spmn Decision List: ", spmn_dec_list)
-        state = env.reset()
-
-        print("cspmn Decision Dictionary: ", credal_best_next_decisions(valus, state,env))
-        print("Number of Same nodes across CSPMN: ", child_parser(valus) / len(valus))
-
-        feature_names = get_feature_names(dataset)
-        test_data = [[np.nan] * len(feature_names)]
-
-        m = meu(spmn, test_data)
-        q = sum([meu(p, test_data)[0] for p in valus]) / len(valus)
-
-        meus = (m[0])
-
-        print("meus: ", meus)
-        print("Cmeus: ", q, "\n\n====================\n")
-
-        feature_labels = get_feature_labels(dataset)
-        if dataset == "Export_Textiles":
-            plot_spn(valus[4], 'cspmn.pdf', feature_labels=feature_labels)
-            plot_spn(valus[3], 'spmn.pdf', feature_labels=feature_labels)
-"""
-
-
-
-
-datas=["Export_Textiles",'Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
-
-
-#credal_tester(datas)
-from cascading_spmn import caSpmn
-
-
-"""
-Function that is used in testing the generation of CASPMNs by plotting
-will plot one credal structure from the cascasing spmn for each dataset in "datas"
-"""
-def createCredalSPMNSets():
-    for dataset in datas:
-        cascading = caSpmn(dataset)
-        print(dataset)
-        cascading.learn()
-
-        env = get_env(dataset)
-        state = env.reset()
-
-        print(cascading.cascading_best_next_decision(state))
-
-        with open(f"models_credal_{dataset}.pickle","wb+") as fp:
-            pickle.dump(cascading.sets[0],fp)
-
-
-"""
-Main Testing method
-Creates a cascading spmn with multiple variants of indpendence testing for product nodes
-Outputs a file which contains the decisions and majority vote of each spmn group as well as the original trained spmn
-"""
-def caspmn_new_full_test(datas):
-    for dataset in datas:
-        print(get_partial_order(dataset))
-        cascading = caSpmn(dataset,number_of_credals=1000,vers=["naive","RDC"])
-        print(dataset)
-        cascading.learn(force_make_new=True)
-
-        env = get_env(dataset)
-        state = env.reset()
-        isDone = False
-        x=1
-
-        while(not isDone):
-
-            decision, decision_index ,decisionList, credalList =  cascading.cascading_best_next_decision(state)
-
-            print(decisionList, credalList)
-
-            feature_labels = get_feature_labels(dataset)
-
-            with open("output/credal_values.txt","a+") as fp:
-                fp.write(f"{dataset},{x},{decision},{decision_index},{decisionList},{credalList},{best_next_decision(cascading.spmns[1],state)[0][0]}\n")
-
-            x=x+1
-        #plot_spn(cascading.sets[0][0],f"graphs/naive_cspmn{dataset}.png",feature_labels=feature_labels)
-        #plot_spn(cascading.spmns[0],f"graphs/naive_spmn{dataset}.png",feature_labels=feature_labels)
-            state, reward, isDone = env.step(decision)
-
-
-
-
-caspmn_new_full_test(datas)
-
-
-
-
+    print("\n\n\n\n\n")
+    #f = open(f"{path}/{dataset}_stats.txt", "w")
+    #f.write(f"\n\n\n{dataset}\n\n")
+    #f.write(f"\n#Nodes: {nodes}")
+    #f.write(f"\nLog-likelihood: {ll}")
+    #f.write(f"\nTime: {end - start}")
+    #f.write("\n\n\n\n\n")
+    #f.close()
