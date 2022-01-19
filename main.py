@@ -128,32 +128,32 @@ for dataset in datasets:
 
     spn, train, test, var = buildSPN(dataset)
 
-    nodes = get_structure_stats_dict(spn)["nodes"]
-
-
-    batches = 10
-    pool = multiprocessing.Pool()
-    batch_size = int(len(test) / batches)
-    batch = list()
-    total_ll = 0
-    for j in range(batches):
-        test_slice = test[j * batch_size:(j + 1) * batch_size]
-        lls = pool.map(get_loglikelihood, test_slice)
-        total_ll += sum(lls)
-        printProgressBar(j + 1, batches, prefix=f'Evaluation Progress:', suffix='Complete', length=50)
-
-    ll = total_ll / len(test)
-
-    # Print and save stats
-    print("\n\n\n\n\n")
-    print("#Nodes: ", nodes)
-    print("Log-likelihood: ", ll)
-
-    print("\n\n\n\n\n")
-    #f = open(f"{path}/{dataset}_stats.txt", "w")
-    #f.write(f"\n\n\n{dataset}\n\n")
-    #f.write(f"\n#Nodes: {nodes}")
-    #f.write(f"\nLog-likelihood: {ll}")
-    #f.write(f"\nTime: {end - start}")
-    #f.write("\n\n\n\n\n")
-    #f.close()
+    # nodes = get_structure_stats_dict(spn)["nodes"]
+    #
+    #
+    # batches = 10
+    # pool = multiprocessing.Pool()
+    # batch_size = int(len(test) / batches)
+    # batch = list()
+    # total_ll = 0
+    # for j in range(batches):
+    #     test_slice = test[j * batch_size:(j + 1) * batch_size]
+    #     lls = pool.map(get_loglikelihood, test_slice)
+    #     total_ll += sum(lls)
+    #     printProgressBar(j + 1, batches, prefix=f'Evaluation Progress:', suffix='Complete', length=50)
+    #
+    # ll = total_ll / len(test)
+    #
+    # # Print and save stats
+    # print("\n\n\n\n\n")
+    # print("#Nodes: ", nodes)
+    # print("Log-likelihood: ", ll)
+    #
+    # print("\n\n\n\n\n")
+    # #f = open(f"{path}/{dataset}_stats.txt", "w")
+    # #f.write(f"\n\n\n{dataset}\n\n")
+    # #f.write(f"\n#Nodes: {nodes}")
+    # #f.write(f"\nLog-likelihood: {ll}")
+    # #f.write(f"\nTime: {end - start}")
+    # #f.write("\n\n\n\n\n")
+    # #f.close()

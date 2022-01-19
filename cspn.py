@@ -1,9 +1,18 @@
 import math
+import multiprocessing
 
 import numpy as np
 
 import logging
 
+from spn.algorithms.EM import EM_optimization
+from spn.algorithms.Statistics import get_structure_stats_dict
+from spn.algorithms.StructureLearning import get_next_operation, learn_structure
+from spn.algorithms.splitting.RDC import get_split_cols_RDC_py
+from spn.io.ProgressBar import printProgressBar
+from spn.algorithms.Inference import log_likelihood
+from spn.structure.leaves.histogram.Histograms import create_histogram_leaf
+from spn.structure.Base import Context
 logger = logging.getLogger(__name__)
 
 import warnings
@@ -11,37 +20,34 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import pandas as pd
-from os import path as pth
-import sys, os
+
 import random
-import copy
-from sklearn.model_selection import train_test_split
-from spn.data.metaData import *
+
 from spn.structure.StatisticalTypes import MetaType
-from spn.algorithms.SPMNDataUtil import align_data
-from spn.algorithms.SPMN import SPMN
+
 from spn.structure.Base import Sum
-from spn.algorithms.MEU import meu
-from spn.algorithms.Inference import log_likelihood
-from spn.algorithms.Statistics import get_structure_stats_dict
-from spn.io.Graphics import plot_spn
-from spn.data.simulator import get_env
+
 from spn.algorithms.MEU import best_next_decision
-from spn.io.ProgressBar import printProgressBar
+
 import numpy
-import multiprocessing
-import matplotlib.pyplot as plt
-from os import path as pth
-import sys, os
-from collections import Counter
+from spn.algorithms.splitting.Clustering import get_split_rows_KMeans
+
 import time
-import pickle
-from tqdm import tqdm
-from main_testing import child_parser
+
 
 #TODO Dynamic recursion limit?  How is this handeled by Swaraj?
 #inplace for bug, doesn't solve bug though......
 #sys.setrecursionlimit(1000000000)
+
+cols = "rdc"
+rows = "kmeans"
+min_instances_slice = 200
+threshold = 0.3
+ohe = False
+leaves = create_histogram_leaf
+rand_gen = None
+cpus = -1
+
 
 
 class contaminator():
@@ -64,108 +70,101 @@ Parser that visits every node in the SPMN checks if it is a sum node then contam
 input: SPMN
 output: credalized spmn
 """
-def learnCSPMNs(curr_node_list=[]):
+def learnCSPNs(curr_node_list=[]):
     curr_node_parser = curr_node_list[0]
     if(not hasattr(curr_node_parser,"children")): return True
     if( not curr_node_parser.children): return True
-    #print(curr_node_parser.children)
-    #if(hasattr(curr_node_parser,"weights")): print(curr_node_parser.weights)
+
     if isinstance(curr_node_parser,Sum):
-        #print("prior",curr_node_parser.weights)
+
         for curr_node in curr_node_list:
-            #print("prior",curr_node.weights)
 
-            #TODO FIX THIS Duplication bug* ?
-
-            #equal normalized weights
-            #curr_node.weights = [1/len(curr_node.weights) for x in curr_node.weights]
-
-
-            #Random normalized weights
             curr_node.weights=cont.e_contam(curr_node)
-
-
-            #Make one random node be 1.0 weighted and the rest 0
-            #============================================================
-            #curr_node.weights=[0 for x in curr_node.weights]
-            #curr_node.weights[random.randint(0,len(curr_node.weights)-1)]=1.0
-            #==============================================================
-            #print("post",curr_node.weights)
-
-        #print("post",curr_node_parser.weights)
-    #Old method for single CSPMN generation
-    #for child_node in curr_node.children: learnCSPMNs(child_node,n)
 
     for i in range(0,len(curr_node_parser.children)):
         #print(f"learning child {i}")
-        learnCSPMNs([node.children[i] for node in curr_node_list])
+        learnCSPNs([node.children[i] for node in curr_node_list])
 
     return curr_node_list
 
+
+
+#TODO maybe add independence testing change
 """
-def learner(spmn, n=10):
-    curr_node_list = [copy.deepcopy(spmn) for x in range(n)]
-    return learnCSPMNs(curr_node_list)
+Generates the SPN given the independence testing method(?) and the dataset
 """
+def buildSPN(dataset):
+    df = pd.read_csv(f"spn/data/binary/{dataset}.ts.data", sep=',')
+    train = df.values
+    df2 = pd.read_csv(f"spn/data/binary/{dataset}.test.data", sep=',')
+    test = df2.values
+    data = np.concatenate((train, test))
+    var = data.shape[1]
+    train, test = data, data
 
+    df3 = pd.read_csv(f"spn/data/binary/{dataset}.valid.data", sep=',')
+    valid = df3.values
 
-"""
-Generates the SPMN given the independence testing method and the dataset
-"""
-def buildSPMN(dataset,ver):
-    partial_order = get_partial_order(dataset)
-    utility_node = get_utilityNode(dataset)
-    decision_nodes = get_decNode(dataset)
-    feature_names = get_feature_names(dataset)
-    feature_labels = get_feature_labels(dataset)
-    meta_types = [MetaType.DISCRETE] * (len(feature_names) - 1) + [MetaType.UTILITY]
+    ds_context = Context(meta_types=[MetaType.DISCRETE] * train.shape[1])
+    ds_context.add_domains(train)
 
-    df = pd.read_csv(f"spn/data/{dataset}/{dataset}.tsv", sep='\t')
+    # Initialize splitting functions and next operation
+    split_cols = get_split_cols_RDC_py(rand_gen=rand_gen, ohe=ohe, n_jobs=cpus)
+    split_rows = get_split_rows_KMeans()
+    nextop = get_next_operation(min_instances_slice)
 
-    df, column_titles = align_data(df, partial_order)  # aligns data in partial order sequence
+    # Learn the spn
+    print('\nStart Learning...')
+    start = time.time()
+    spn = learn_structure(train, ds_context, split_rows, split_cols, leaves, nextop)
+    end = time.time()
+    print('SPN Learned!\n')
 
-    data = df.values
-    train, test = data, np.array(random.sample(list(data), int(data.shape[0] * 0.02)))
+    print(f'Runtime: {end - start}')
 
-    # print("Start Learning...")
-    spmn = SPMN(partial_order, decision_nodes, utility_node, feature_names, meta_types,
-                cluster_by_curr_information_set=True, util_to_bin=False,ver=ver)
+    # inplace hardEM operation
+    EM_optimization(spn, valid)
 
-    spmn = spmn.learn_spmn(train)
-
-    #For Now all will be hardEMed for testing.
-    from spn.algorithms.EM import EM_optimization
-    EM_optimization(spmn,train,iterations=100)
-
-    return spmn
-
-"""
-Performs decision making on a list of credalized spmns (neccesary for CASPMNs)
-"""
-def credal_best_next_decision(cspmn_list,state):
-    decisions = {}
-
-    for cspmn in cspmn_list:
-        spmn_output = best_next_decision(cspmn, state)
-        action = spmn_output[0][0]
-
-        if action in decisions:
-            decisions[action] = decisions[action] + 1
-        else:
-            decisions[action] = 1
-
-    dominant_action = None
-    credal_value = 0
-    curr_state_decisions = decisions
-    for x in curr_state_decisions:
-        if curr_state_decisions[x] > credal_value:
-            dominant_action = x
-            credal_value = curr_state_decisions[x]
-
-
-    return dominant_action,credal_value
+    #TODO cleanup the returns and printing script
+    return spn, test, train, var, start, end
 
 
 
+
+
+
+def testSPN(spn, test, train, dataset, path, var,start,end):
+    nodes = get_structure_stats_dict(spn)["nodes"]
+
+    def get_loglikelihood(instance):
+        test_data = np.array(instance).reshape(-1, var)
+        return log_likelihood(spn, test_data)[0][0]
+
+
+    batches = 10
+    pool = multiprocessing.Pool()
+    batch_size = int(len(test) / batches)
+    batch = list()
+    total_ll = 0
+    for j in range(batches):
+        test_slice = test[j * batch_size:(j + 1) * batch_size]
+        lls = pool.map(get_loglikelihood, test_slice)
+        total_ll += sum(lls)
+        printProgressBar(j + 1, batches, prefix=f'Evaluation Progress:', suffix='Complete', length=50)
+
+    ll = total_ll / len(test)
+
+    # Print and save stats
+    print("\n\n\n\n\n")
+    print("#Nodes: ", nodes)
+    print("Log-likelihood: ", ll)
+
+    print("\n\n\n\n\n")
+    with open(f"{path}/{dataset}_stats.txt", "w") as f:
+        f.write(f"\n\n\n{dataset}\n\n")
+        f.write(f"\n#Nodes: {nodes}")
+        f.write(f"\nLog-likelihood: {ll}")
+        f.write(f"\nTime: {end - start}")
+        f.write("\n\n\n\n\n")
 
 
