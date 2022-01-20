@@ -11,36 +11,15 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-import pandas as pd
-from os import path as pth
-import sys, os
-import random
+
 import copy
-from sklearn.model_selection import train_test_split
-from spn.data.metaData import *
-from spn.structure.StatisticalTypes import MetaType
-from spn.algorithms.SPMNDataUtil import align_data
-from spn.algorithms.SPMN import SPMN
-from spn.structure.Base import Sum
-from spn.algorithms.MEU import meu
-from spn.algorithms.Inference import log_likelihood
-from spn.algorithms.Statistics import get_structure_stats_dict
-from spn.io.Graphics import plot_spn
-from spn.data.simulator import get_env
-from spn.algorithms.MEU import best_next_decision
-from spn.io.ProgressBar import printProgressBar
-import numpy
-import multiprocessing
-import matplotlib.pyplot as plt
-from os import path as pth
+
 import sys, os
-from collections import Counter
-import time
+
 import pickle
 from tqdm import tqdm
-from main_testing import child_parser
-from cspmn import learnCSPMNs
-from cspmn import buildSPMN, credal_best_next_decision
+from cspn import testSPN
+
 
 
 
@@ -107,9 +86,12 @@ class caSpn():
     """
     def buildSpns(self):
         spn_bucket = []
+        self.context_bucket = []
         for i in tqdm(range(self.number_of_sets)):
-            spn_bucket.append(buildSPN(self.dataset))
-
+            spn, test, train, var, start, end = buildSPN(self.dataset)
+            spn_bucket.append(spn)
+            self.context_bucket.append([test,train,self.dataset,var,start,end])
+            print(spn_bucket)
         return spn_bucket
 
     """
@@ -120,6 +102,10 @@ class caSpn():
         with open(f"credal_spns.pickle", "rb") as file:
             self.sets = pickle.load(file)
         return True
+
+
+
+
 
     """
     Implementation of the "Best Next Decision" function of SPMNs for CASPMNs

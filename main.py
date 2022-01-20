@@ -9,26 +9,13 @@ using the LearnSPN algorithm
 
 import numpy as np
 
+from cspn import testSPN
 from spn.algorithms.StructureLearning import get_next_operation, learn_structure
-from spn.algorithms.CnetStructureLearning import get_next_operation_cnet, learn_structure_cnet
-from spn.algorithms.Validity import is_valid
-from spn.algorithms.Statistics import get_structure_stats_dict
-
-from spn.structure.Base import Sum, assign_ids
-
 from spn.structure.leaves.histogram.Histograms import create_histogram_leaf
-from spn.structure.leaves.parametric.Parametric import create_parametric_leaf
-from spn.structure.leaves.piecewise.PiecewiseLinear import create_piecewise_leaf
-from spn.structure.leaves.cltree.CLTree import create_cltree_leaf
-from spn.algorithms.splitting.Conditioning import (
-    get_split_rows_naive_mle_conditioning,
-    get_split_rows_random_conditioning,
-)
-
 from spn.algorithms.splitting.Clustering import get_split_rows_KMeans
 from spn.algorithms.splitting.RDC import get_split_cols_RDC_py
 from spn.algorithms.EM import EM_optimization
-from spn.io.ProgressBar import printProgressBar
+
 import logging
 from spn.algorithms.Inference import log_likelihood
 
@@ -41,13 +28,13 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 from spn.structure.Base import Context
 from spn.structure.StatisticalTypes import MetaType
-from spn.algorithms.Statistics import get_structure_stats_dict
-import matplotlib.pyplot as plt
 from os import path as pth
 import sys, os
 import time
-import multiprocessing
+
 import pickle
+
+from caspn import caSpn
 
 # Initialize parameters
 
@@ -61,6 +48,7 @@ rand_gen = None
 cpus = -1
 
 datasets = ["nltcs", "msnbc", "kdd", "baudio", "jester", "bnetflix"]
+datasets = ["nltcs"]
 # datasets = ['bnetflix']
 path = "original_new_opt"
 
@@ -126,34 +114,12 @@ for dataset in datasets:
             print("Creation of the directory %s failed" % path)
             sys.exit()
 
-    spn, train, test, var = buildSPN(dataset)
+    credal = caSpn(dataset=dataset)
 
-    # nodes = get_structure_stats_dict(spn)["nodes"]
-    #
-    #
-    # batches = 10
-    # pool = multiprocessing.Pool()
-    # batch_size = int(len(test) / batches)
-    # batch = list()
-    # total_ll = 0
-    # for j in range(batches):
-    #     test_slice = test[j * batch_size:(j + 1) * batch_size]
-    #     lls = pool.map(get_loglikelihood, test_slice)
-    #     total_ll += sum(lls)
-    #     printProgressBar(j + 1, batches, prefix=f'Evaluation Progress:', suffix='Complete', length=50)
-    #
-    # ll = total_ll / len(test)
-    #
-    # # Print and save stats
-    # print("\n\n\n\n\n")
-    # print("#Nodes: ", nodes)
-    # print("Log-likelihood: ", ll)
-    #
-    # print("\n\n\n\n\n")
-    # #f = open(f"{path}/{dataset}_stats.txt", "w")
-    # #f.write(f"\n\n\n{dataset}\n\n")
-    # #f.write(f"\n#Nodes: {nodes}")
-    # #f.write(f"\nLog-likelihood: {ll}")
-    # #f.write(f"\nTime: {end - start}")
-    # #f.write("\n\n\n\n\n")
-    # #f.close()
+    credal.learn(force_make_new=True)
+    context = credal.context_bucket[0]
+    otherContext = credal.context_bucket[1]
+    #spn, test, train, dataset, path, var,start,end
+    testSPN(credal.spns[0],context[0],context[1],context[2],context[3],context[4],context[5])
+    testSPN(credal.spns[0],otherContext[0],otherContext[1],otherContext[2],otherContext[3],otherContext[4],otherContext[5])
+

@@ -14,7 +14,7 @@ from spn.algorithms.Inference import log_likelihood
 from spn.structure.leaves.histogram.Histograms import create_histogram_leaf
 from spn.structure.Base import Context
 logger = logging.getLogger(__name__)
-
+from itertools import repeat
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -130,15 +130,15 @@ def buildSPN(dataset):
 
 
 
+def get_loglikelihood(instance,spn,var):
+    test_data = np.array(instance).reshape(-1, var)
+    return log_likelihood(spn, test_data)[0][0]
 
 
-
-def testSPN(spn, test, train, dataset, path, var,start,end):
+def testSPN(spn, test, train, dataset, var,start,end):
     nodes = get_structure_stats_dict(spn)["nodes"]
 
-    def get_loglikelihood(instance):
-        test_data = np.array(instance).reshape(-1, var)
-        return log_likelihood(spn, test_data)[0][0]
+
 
 
     batches = 10
@@ -148,7 +148,9 @@ def testSPN(spn, test, train, dataset, path, var,start,end):
     total_ll = 0
     for j in range(batches):
         test_slice = test[j * batch_size:(j + 1) * batch_size]
-        lls = pool.map(get_loglikelihood, test_slice)
+        #spnTestHold = [spn for x in range(len(test_slice))]
+        #varTestHold = [var for x in range(len(test_slice))]
+        lls = pool.starmap(get_loglikelihood, zip(test_slice,repeat(spn),repeat(var)))
         total_ll += sum(lls)
         printProgressBar(j + 1, batches, prefix=f'Evaluation Progress:', suffix='Complete', length=50)
 
@@ -160,11 +162,11 @@ def testSPN(spn, test, train, dataset, path, var,start,end):
     print("Log-likelihood: ", ll)
 
     print("\n\n\n\n\n")
-    with open(f"{path}/{dataset}_stats.txt", "w") as f:
-        f.write(f"\n\n\n{dataset}\n\n")
-        f.write(f"\n#Nodes: {nodes}")
-        f.write(f"\nLog-likelihood: {ll}")
-        f.write(f"\nTime: {end - start}")
-        f.write("\n\n\n\n\n")
+    # with open(f"{path}/{dataset}_stats.txt", "w") as f:
+    #     f.write(f"\n\n\n{dataset}\n\n")
+    #     f.write(f"\n#Nodes: {nodes}")
+    #     f.write(f"\nLog-likelihood: {ll}")
+    #     f.write(f"\nTime: {end - start}")
+    #     f.write("\n\n\n\n\n")
 
 

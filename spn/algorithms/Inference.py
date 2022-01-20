@@ -29,7 +29,7 @@ def leaf_marginalized_likelihood(node, data=None, dtype=np.float64):
 
 def prod_log_likelihood(node, children, data=None, dtype=np.float64):
 	llchildren = np.concatenate(children, axis=1)
-	print(llchildren.dtype,dtype)
+	#print(llchildren.dtype,dtype)
 	assert llchildren.dtype == dtype
 	pll = np.sum(llchildren, axis=1).reshape(-1, 1)
 	pll[np.isinf(pll)] = np.finfo(pll.dtype).min
