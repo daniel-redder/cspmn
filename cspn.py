@@ -130,16 +130,15 @@ def buildSPN(dataset):
 
 
 
+
 def get_loglikelihood(instance,spn,var):
     test_data = np.array(instance).reshape(-1, var)
     return log_likelihood(spn, test_data)[0][0]
 
 
-def testSPN(spn, test, train, dataset, var,start,end):
+
+def testSPN(spn,test,train,dataset,var,start,end,vers):
     nodes = get_structure_stats_dict(spn)["nodes"]
-
-
-
 
     batches = 10
     pool = multiprocessing.Pool()
@@ -148,13 +147,20 @@ def testSPN(spn, test, train, dataset, var,start,end):
     total_ll = 0
     for j in range(batches):
         test_slice = test[j * batch_size:(j + 1) * batch_size]
-        #spnTestHold = [spn for x in range(len(test_slice))]
-        #varTestHold = [var for x in range(len(test_slice))]
-        lls = pool.starmap(get_loglikelihood, zip(test_slice,repeat(spn),repeat(var)))
+        # spnTestHold = [spn for x in range(len(test_slice))]
+        # varTestHold = [var for x in range(len(test_slice))]
+        lls = pool.starmap(get_loglikelihood, zip(test_slice, repeat(spn), repeat(var)))
         total_ll += sum(lls)
         printProgressBar(j + 1, batches, prefix=f'Evaluation Progress:', suffix='Complete', length=50)
 
     ll = total_ll / len(test)
+
+    return ll, nodes
+
+
+def printSPN(spn, test, train, dataset, var,start,end,vers):
+
+    ll, nodes = testSPN(spn,test,train,dataset,var,start,end,vers)
 
     # Print and save stats
     print("\n\n\n\n\n")
@@ -162,11 +168,12 @@ def testSPN(spn, test, train, dataset, var,start,end):
     print("Log-likelihood: ", ll)
 
     print("\n\n\n\n\n")
-    # with open(f"{path}/{dataset}_stats.txt", "w") as f:
-    #     f.write(f"\n\n\n{dataset}\n\n")
-    #     f.write(f"\n#Nodes: {nodes}")
-    #     f.write(f"\nLog-likelihood: {ll}")
-    #     f.write(f"\nTime: {end - start}")
-    #     f.write("\n\n\n\n\n")
+    with open(f"original_new_opt/caspn_stats.txt", "a+") as f:
+        f.write(f"\n\n\n{dataset}\n\n")
+        f.write(f'Independence Testing: {vers}')
+        f.write(f"\n#Nodes: {nodes}")
+        f.write(f"\nLog-likelihood: {ll}")
+        f.write(f"\nTime: {end - start}")
+
 
 

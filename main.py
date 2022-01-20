@@ -120,6 +120,7 @@ for dataset in datasets:
     context = credal.context_bucket[0]
     otherContext = credal.context_bucket[1]
     #spn, test, train, dataset, path, var,start,end
-    testSPN(credal.spns[0],context[0],context[1],context[2],context[3],context[4],context[5])
-    testSPN(credal.spns[0],otherContext[0],otherContext[1],otherContext[2],otherContext[3],otherContext[4],otherContext[5])
-
+    testSPN(credal.spns[0],context[0],context[1],context[2],context[3],context[4],context[5],credal.vers[0])
+    testSPN(credal.spns[1],otherContext[0],otherContext[1],otherContext[2],otherContext[3],otherContext[4],otherContext[5],credal.vers[1])
+    with open("original_new_opt/models/caspn_stats.txt","a+") as f:
+        f.write(f"\n {credal.testCASPN()}")

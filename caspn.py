@@ -3,6 +3,8 @@ import numpy as np
 
 import logging
 
+from numba import jit
+
 from cspn import buildSPN, learnCSPNs
 
 logger = logging.getLogger(__name__)
@@ -104,9 +106,16 @@ class caSpn():
         return True
 
 
-
-
-
+    def testCASPN(self):
+        tll = 0
+        count = 0
+        for x in range(len(self.sets)):
+            for y in self.sets[x]:
+                context = self.context_bucket[x]
+                ll, nodes = testSPN(y,context[0],context[1],context[2],context[3],context[4],context[5],self.vers[x])
+                tll+=ll
+                count+=1
+        return tll/count
     """
     Implementation of the "Best Next Decision" function of SPMNs for CASPMNs
     Returns (for now) the first decision in the set with uncertainty greater than the "weight value" else returns the first decision, each decision, and the credal values of the decisions
