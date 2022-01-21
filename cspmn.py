@@ -121,7 +121,7 @@ def learnCSPMNs(curr_node_list=[],rangeW=[1,100]):
         #print(f"learning child {i}")
         learnCSPMNs([node.children[i] for node in curr_node_list],rangeW)
 
-    return curr_node_list
+    return curr_node_list, rangeW
 
 def learner(spmn, n=10,bias=0):
     curr_node_list = [copy.deepcopy(spmn) for x in range(n)]

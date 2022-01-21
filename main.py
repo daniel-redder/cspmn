@@ -279,7 +279,7 @@ def caspmn_new_full_test(datas):
         env = get_env(dataset)
         state = env.reset()
 
-        decision, decisionList, credalList =  cascading.cascading_best_next_decision(state)
+        decision, decisionList, credalList, weightList =  cascading.cascading_best_next_decision(state)
 
         print(decisionList, credalList)
 
@@ -288,7 +288,7 @@ def caspmn_new_full_test(datas):
         feature_labels = get_feature_labels(dataset)
 
         with open("output/credal_range_values.txt","a+") as fp:
-            fp.write(f"{dataset},{decision},{decisionList},{credalList},{best_next_decision(cascading.spmns[0],state)[0][0]}\n")
+            fp.write(f"{dataset},{decision},{decisionList},{credalList},{weightList},{best_next_decision(cascading.spmns[0],state)[0][0]}\n")
 
         #plot_spn(cascading.sets[0][0],f"graphs/naive_cspmn{dataset}.png",feature_labels=feature_labels)
         #plot_spn(cascading.spmns[0],f"graphs/naive_spmn{dataset}.png",feature_labels=feature_labels)

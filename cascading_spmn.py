@@ -54,6 +54,7 @@ class caSpmn():
         self.bias = bias
         self.number_of_credals = number_of_credals
         self.vers = vers
+        self.rangeW = []
         if weight[0]==42:self.weight = [.5*number_of_credals for x in range(number_of_sets)]
         else: self.weight = weight
 
@@ -80,8 +81,11 @@ class caSpmn():
 
     def credalize(self,spmns):
         sets = []
+
         for i in range(len(spmns)):
-            sets.append(learner(spmns[i],self.number_of_credals,self.bias*(i)))
+            learnedSPMN, rangeW = learner(spmns[i],self.number_of_credals,self.bias*(i))
+            sets.append(learnedSPMN)
+            self.rangeW.append(rangeW)
         return sets
 
     def buildSpmns(self):
@@ -112,7 +116,7 @@ class caSpmn():
             if(credal_values[x] >= self.weight[x]): return dominant_decisions[x], dominant_decisions, credal_values
 
         #TODO for reality this would be replaced with a default decision, or alternative decision system
-        return dominant_decisions[0],dominant_decisions,credal_values
+        return dominant_decisions[0],dominant_decisions,credal_values, self.rangeW
 
 
 
