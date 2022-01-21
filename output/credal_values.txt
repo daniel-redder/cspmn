@@ -6,3 +6,6 @@ Test_Strep,0.0,[0.0, 1.0],[517, 510],spmn:0.0
 Export_Textiles,1,[1, 1],[978, 982],1
 Export_Textiles,1,[1, 1],[970, 975],1
 Powerplant_Airpollution,0.0,[0.0, 0.0],[554, 574],1.0
+Powerplant_Airpollution,0.0,[0.0, 0.0],[594, 581],1.0
+HIV_Screening,1.0,[1.0, 1.0],[622, 593],0.0
+Computer_Diagnostician,1,[1, 1],[605, 576],0

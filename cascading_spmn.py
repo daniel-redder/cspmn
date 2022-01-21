@@ -47,10 +47,11 @@ from cspmn import buildSPMN, credal_best_next_decision
 class caSpmn():
 
     #built from SPMN
-    def __init__(self, dataset, number_of_sets=2,vers=["naive","naive"] ,number_of_credals=10, weight=[42]):
+    def __init__(self, dataset, number_of_sets=2,vers=["naive","naive"] ,number_of_credals=10, weight=[42],bias=0):
         self.dataset = dataset
         self.cspmns = []
         self.number_of_sets = number_of_sets
+        self.bias = bias
         self.number_of_credals = number_of_credals
         self.vers = vers
         if weight[0]==42:self.weight = [.5*number_of_credals for x in range(number_of_sets)]
@@ -80,7 +81,7 @@ class caSpmn():
     def credalize(self,spmns):
         sets = []
         for i in range(len(spmns)):
-            sets.append(learner(spmns[i],self.number_of_credals))
+            sets.append(learner(spmns[i],self.number_of_credals,self.bias*(i)))
         return sets
 
     def buildSpmns(self):

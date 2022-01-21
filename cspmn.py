@@ -49,15 +49,42 @@ class contaminator():
 
     #random "contamination" not really "e" contamination yet
 
-    def e_contam(self, node):
+    def e_contam(self, node,rangeW):
         # contaminate them
-        node.weights = self.rng.dirichlet(alpha=[random.randint(1,100) for x in node.weights])
+        node.weights = self.rng.dirichlet(alpha=[random.randint(rangeW[0],rangeW[1]) for x in node.weights])
         return node.weights
 cont = contaminator()
 
 
+#parses tree finding minimum and maximum weights
+def fixWeightRange(curr_node_list=[],bias=0,minW=0,maxW=0):
+    curr_node_parser = curr_node_list[0]
+    if (not hasattr(curr_node_parser, "children")): return True
+    if (not curr_node_parser.children): return True
 
-def learnCSPMNs(curr_node_list=[]):
+    if isinstance(curr_node_parser, Sum):
+
+        for curr_node in curr_node_list:
+
+            if min(curr_node.weights) < minW: minW = min(curr_node.weights)
+            if max(curr_node.weights) > maxW: maxW = max(curr_node.weights)
+
+    for i in range(0, len(curr_node_parser.children)):
+        # print(f"learning child {i}")
+        fixWeightRange([node.children[i] for node in curr_node_list],bias,minW,maxW)
+
+    #quick test
+    #this can go negative because the dirchlet distribution will normalize it.
+    print(minW,bias)
+    return minW+bias,maxW+bias
+
+
+
+
+
+
+
+def learnCSPMNs(curr_node_list=[],rangeW=[0,100]):
     curr_node_parser = curr_node_list[0]
     if(not hasattr(curr_node_parser,"children")): return True
     if( not curr_node_parser.children): return True
@@ -75,7 +102,7 @@ def learnCSPMNs(curr_node_list=[]):
 
 
             #Random normalized weights
-            curr_node.weights=cont.e_contam(curr_node)
+            curr_node.weights=cont.e_contam(curr_node,rangeW)
 
 
             #Make one random node be 1.0 weighted and the rest 0
@@ -91,12 +118,13 @@ def learnCSPMNs(curr_node_list=[]):
 
     for i in range(0,len(curr_node_parser.children)):
         #print(f"learning child {i}")
-        learnCSPMNs([node.children[i] for node in curr_node_list])
+        learnCSPMNs([node.children[i] for node in curr_node_list],rangeW)
 
     return curr_node_list
 
-def learner(spmn, n=10):
+def learner(spmn, n=10,bias=0):
     curr_node_list = [copy.deepcopy(spmn) for x in range(n)]
+    rangeW = fixWeightRange(curr_node_list,bias)
     return learnCSPMNs(curr_node_list)
 
 
