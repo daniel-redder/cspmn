@@ -41,17 +41,17 @@ from main_testing import child_parser
 
 
 
-class contaminator():
-    def __init__(self):
-        self.rng = numpy.random.default_rng()
+#class contaminator():
+ #   def __init__(self):
+  #      self.rng = numpy.random.default_rng()
 
     #random "contamination" not really "e" contamination yet
 
-    def e_contam(self, node):
-        # contaminate them
-        node.weights = self.rng.dirichlet(alpha=[random.randint(1,100) for x in node.weights])
-        return node.weights
-cont = contaminator()
+   # def e_contam(self, node):
+    #    # contaminate them
+     #   node.weights = self.rng.dirichlet(alpha=[random.randint(1,100) for x in node.weights])
+      #  return node.weights
+#cont = contaminator()
 
 #input a node
 

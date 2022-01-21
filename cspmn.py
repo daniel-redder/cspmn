@@ -51,14 +51,14 @@ class contaminator():
 
     def e_contam(self, node,rangeW):
         # contaminate them
-        print(node.weights,random.uniform(rangeW[0],rangeW[1]))
+        print(random.uniform(rangeW[0],rangeW[1]))
         node.weights = self.rng.dirichlet(alpha=[random.uniform(rangeW[0],rangeW[1]) for x in node.weights])
         return node.weights
 cont = contaminator()
 
 
 #parses tree finding minimum and maximum weights
-def fixWeightRange(curr_node_list=[],bias=0,minW=0,maxW=0):
+def fixWeightRange(curr_node_list=[],bias=0,minW=50,maxW=50):
     curr_node_parser = curr_node_list[0]
     if (not hasattr(curr_node_parser, "children")): return True
     if (not curr_node_parser.children): return True
