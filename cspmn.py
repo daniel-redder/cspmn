@@ -76,7 +76,7 @@ def fixWeightRange(curr_node_list=[],bias=0,minW=0,maxW=0):
     #quick test
     #this can go negative because the dirchlet distribution will normalize it.
     print(minW,bias)
-    return minW+bias,maxW+bias
+    return max(0,minW-bias),min(maxW+bias,100)
 
 
 
@@ -84,7 +84,7 @@ def fixWeightRange(curr_node_list=[],bias=0,minW=0,maxW=0):
 
 
 
-def learnCSPMNs(curr_node_list=[],rangeW=[0,100]):
+def learnCSPMNs(curr_node_list=[],rangeW=[1,100]):
     curr_node_parser = curr_node_list[0]
     if(not hasattr(curr_node_parser,"children")): return True
     if( not curr_node_parser.children): return True
@@ -125,7 +125,7 @@ def learnCSPMNs(curr_node_list=[],rangeW=[0,100]):
 def learner(spmn, n=10,bias=0):
     curr_node_list = [copy.deepcopy(spmn) for x in range(n)]
     rangeW = fixWeightRange(curr_node_list,bias)
-    return learnCSPMNs(curr_node_list)
+    return learnCSPMNs(curr_node_list,rangeW)
 
 
 
