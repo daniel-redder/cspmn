@@ -51,7 +51,7 @@ class contaminator():
 
     def e_contam(self, node,rangeW):
         # contaminate them
-        print(node.weights)
+        print(node.weights,random.uniform(rangeW[0],rangeW[1]))
         node.weights = self.rng.dirichlet(alpha=[random.uniform(rangeW[0],rangeW[1]) for x in node.weights])
         return node.weights
 cont = contaminator()
