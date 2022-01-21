@@ -272,7 +272,7 @@ def createCredalSPMNSets():
 def caspmn_new_full_test(datas):
     for dataset in datas:
         print(get_partial_order(dataset))
-        cascading = caSpmn(dataset,number_of_credals=1000,vers=["RDC","RDC","RDC"],bias=10)
+        cascading = caSpmn(dataset,number_of_credals=1000,vers=["RDC","RDC","RDC","RDC","RDC","RDC"],bias=5)
         print(dataset)
         cascading.learn(force_make_new=True)
 
