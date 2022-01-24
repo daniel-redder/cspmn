@@ -4,6 +4,8 @@ import numpy as np
 
 import logging
 
+from spn.algorithms.EM import EM_optimization
+
 logger = logging.getLogger(__name__)
 
 import warnings
@@ -151,6 +153,7 @@ def buildSPMN(dataset,ver):
                 cluster_by_curr_information_set=True, util_to_bin=False,ver=ver)
 
     spmn = spmn.learn_spmn(train)
+    EM_optimization(spmn,train)
 
     return spmn
 

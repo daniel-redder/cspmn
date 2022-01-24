@@ -29,7 +29,7 @@ def leaf_marginalized_likelihood(node, data=None, dtype=np.float64):
 
 def prod_log_likelihood(node, children, data=None, dtype=np.float64):
 	llchildren = np.concatenate(children, axis=1)
-	assert llchildren.dtype == dtype
+	assert llchildren.dtype == dtype, (dtype,llchildren.dtype,llchildren.data)
 	pll = np.sum(llchildren, axis=1).reshape(-1, 1)
 	pll[np.isinf(pll)] = np.finfo(pll.dtype).min
 	return pll
@@ -45,7 +45,7 @@ def prod_likelihood(node, children, data=None, dtype=np.float64):
 
 def max_log_likelihood(node, children, data=None, dtype=np.float64):
 	llchildren = np.concatenate(children, axis=1)
-	assert llchildren.dtype == dtype
+	assert llchildren.dtype == dtype, (dtype,llchildren.dtype)
 	if llchildren.shape[1] == 1:  # if only one child, then it is max.
 		return llchildren
 	assert data is not None, "data must be passed through to max nodes for proper evaluation."
