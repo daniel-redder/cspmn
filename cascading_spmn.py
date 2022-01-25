@@ -83,7 +83,7 @@ class caSpmn():
         sets = []
 
         for i in range(len(spmns)):
-            learnedSPMN, rangeW = learner(spmns[i],self.number_of_credals,self.bias*(i))
+            learnedSPMN, rangeW, count = learner(spmns[i],self.number_of_credals,self.bias*(i))
             sets.append(learnedSPMN)
             self.rangeW.append(rangeW)
         return sets

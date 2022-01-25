@@ -22,7 +22,7 @@ from spn.data.metaData import *
 from spn.structure.StatisticalTypes import MetaType
 from spn.algorithms.SPMNDataUtil import align_data
 from spn.algorithms.SPMN import SPMN
-from spn.structure.Base import Sum
+from spn.structure.Base import Sum, get_number_of_nodes
 from spn.algorithms.MEU import meu
 from spn.algorithms.Inference import log_likelihood
 from spn.algorithms.Statistics import get_structure_stats_dict
@@ -87,17 +87,18 @@ def fixWeightRange(curr_node_list=[],bias=0,minW=50,maxW=50):
 
 
 
-def learnCSPMNs(curr_node_list=[],rangeW=[1,100]):
+def learnCSPMNs(curr_node_list=[],rangeW=[1,100],count=0):
     curr_node_parser = curr_node_list[0]
-    if(not hasattr(curr_node_parser,"children")): return True
-    if( not curr_node_parser.children): return True
+    count+=1
+    if(not hasattr(curr_node_parser,"children")): return None, rangeW, count+1
+    if( not curr_node_parser.children): return None, rangeW, count+1
     #print(curr_node_parser.children)
     #if(hasattr(curr_node_parser,"weights")): print(curr_node_parser.weights)
     if isinstance(curr_node_parser,Sum):
         #print("prior",curr_node_parser.weights)
         for curr_node in curr_node_list:
             #print("prior",curr_node.weights)
-
+           # count+=1
             #TODO FIX THIS Duplication bug* ?
 
             #equal normalized weights
@@ -105,8 +106,9 @@ def learnCSPMNs(curr_node_list=[],rangeW=[1,100]):
 
 
             #Random normalized weights
+            #print(curr_node.dtype,"before")
             curr_node.weights=cont.e_contam(curr_node,rangeW)
-
+            #print(curr_node.weights,"aft")
 
             #Make one random node be 1.0 weighted and the rest 0
             #============================================================
@@ -121,14 +123,16 @@ def learnCSPMNs(curr_node_list=[],rangeW=[1,100]):
 
     for i in range(0,len(curr_node_parser.children)):
         #print(f"learning child {i}")
-        learnCSPMNs([node.children[i] for node in curr_node_list],rangeW)
+        curr_node_hold, rangeW, count  = learnCSPMNs([node.children[i] for node in curr_node_list],rangeW,count+1)
 
-    return curr_node_list, rangeW
+    return curr_node_list, rangeW, count+1
 
 def learner(spmn, n=10,bias=0):
     curr_node_list = [copy.deepcopy(spmn) for x in range(n)]
     rangeW = fixWeightRange(curr_node_list,bias)
-    return learnCSPMNs(curr_node_list,rangeW)
+    spmn,throwaway, count = learnCSPMNs(curr_node_list,rangeW)
+    print(count,"this is the count")
+    return spmn, rangeW, count
 
 
 
@@ -153,6 +157,8 @@ def buildSPMN(dataset,ver):
                 cluster_by_curr_information_set=True, util_to_bin=False,ver=ver)
 
     spmn = spmn.learn_spmn(train)
+    print(get_number_of_nodes(spmn))
+    print(get_structure_stats_dict(spmn)["nodes"],"  pizza")
     EM_optimization(spmn,train)
 
     return spmn

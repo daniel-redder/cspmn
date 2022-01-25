@@ -52,7 +52,9 @@ def EM_optimization(spn, data, iterations=5, node_updates=_node_updates, skip_va
         valid, err = is_valid(spn)
         assert valid, "invalid spn: " + err
 
+                                             #functional checked
     lls_per_node = np.zeros((data.shape[0], get_number_of_nodes(spn)))
+    #lls_per_node = np.zeros((data.shape[0], 0))
 
     for _ in range(iterations):
         # one pass bottom up evaluating the likelihoods

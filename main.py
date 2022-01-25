@@ -249,7 +249,7 @@ from main_testing import child_parser
 
 
 datas=['Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
-
+datas = ['Computer_Diagnostician']
 
 #credal_tester(datas)
 from cascading_spmn import caSpmn
