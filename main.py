@@ -248,8 +248,8 @@ from main_testing import child_parser
 
 
 
-datas=['Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
-datas = ['Computer_Diagnostician']
+datas=["Export_Textiles",'Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
+#datas = ['Computer_Diagnostician']
 
 #credal_tester(datas)
 from cascading_spmn import caSpmn
@@ -272,7 +272,7 @@ def createCredalSPMNSets():
 def caspmn_new_full_test(datas):
     for dataset in datas:
         print(get_partial_order(dataset))
-        cascading = caSpmn(dataset,number_of_credals=1000,vers=["naive","naive"],bias=5)
+        cascading = caSpmn(dataset,number_of_credals=1000,number_of_sets=6,vers=["RDC","RDC","RDC","RDC","RDC","RDC"],bias=5)
         print(dataset)
         cascading.learn(force_make_new=True)
 
