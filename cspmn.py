@@ -1,9 +1,11 @@
 import math
+from itertools import repeat
 
 import numpy as np
 
 import logging
 
+from learnSPMNS import get_reward
 from spn.algorithms.EM import EM_optimization
 from spn.algorithms.MEU import meu
 logger = logging.getLogger(__name__)
@@ -137,7 +139,7 @@ def learner(spmn, n=10,bias=0):
 
 
 
-def buildSPMN(dataset,ver,buildingJson={"before":{"ll":[],"meu":[]},"after":{"ll":[],"meu":[]}}):
+def buildSPMN(dataset,ver,buildingJson={"before":{"ll":[],"meu":[],"data":[],"rewards":[],"reward_dev":[]},"after":{"ll":[],"meu":[],"data":[],"rewards":[],"reward_dev":[]}}):
     partial_order = get_partial_order(dataset)
     utility_node = get_utilityNode(dataset)
     decision_nodes = get_decNode(dataset)
@@ -161,13 +163,57 @@ def buildSPMN(dataset,ver,buildingJson={"before":{"ll":[],"meu":[]},"after":{"ll
     print(get_structure_stats_dict(spmn)["nodes"],"  pizza")
     buildingJson["before"]["meu"].append(meu(spmn,test)[0])
     buildingJson["before"]["ll"].append(log_likelihood(spmn,test)[0][0])
-   
+    rewards, reward_dev = test_rewards(spmn,dataset, test)
+    buildingJson["before"]["dataset"].append(dataset)
+    buildingJson["before"]["rewards"].append(rewards)
+    buildingJson["before"]["reward_dev"].append(reward_dev)
     EM_optimization(spmn,train)
-   
+    rewards, reward_dev = test_rewards(spmn,dataset, test)
     buildingJson["after"]["meu"].append(meu(spmn,test)[0])
     buildingJson["after"]["ll"].append(log_likelihood(spmn,test)[0][0])
-   
+    buildingJson["before"]
     return spmn, buildingJson
+
+
+def get_reward(ids,spmn,env):
+
+	#policy = ""
+	state = env.reset()
+	while(True):
+		output = best_next_decision(spmn, state)
+		action = output[0][0]
+		#policy += f"{action}  "
+		state, reward, done = env.step(action)
+		if done:
+			return reward
+			#return policy
+
+def test_rewards(spmn, dataset, test):
+    env = get_env(dataset)
+    total_reward = 0
+    batch_count = 25
+    batch_size = 20000
+    batch = list()
+
+    pool = multiprocessing.Pool()
+    policy_set = list()
+
+    for z in range(batch_count):
+        ids = [None for x in range(batch_size)]
+        rewards = pool.starmap(get_reward,zip(repeat(spmn,env)))
+
+        # policies = pool.map(get_reward, ids)
+        # policy_set += policies
+        # print(Counter(policy_set))
+
+        batch.append(sum(rewards) / batch_size)
+        # print(batch[-1])
+        printProgressBar(z + 1, batch_count, prefix=f'Average Reward Evaluation :', suffix='Complete', length=50)
+
+    avg_rewards = np.mean(batch)
+    reward_dev = np.std(batch)
+    return avg_rewards, reward_dev
+
 
 
 def credal_best_next_decision(cspmn_list,state):
