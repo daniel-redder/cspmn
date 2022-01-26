@@ -16,6 +16,7 @@ import random
 import copy
 from sklearn.model_selection import train_test_split
 from spn.data.metaData import *
+#from spn.algorithms.MEU import meu
 from spn.structure.StatisticalTypes import MetaType
 from spn.algorithms.SPMNDataUtil import align_data
 from spn.algorithms.SPMN import SPMN

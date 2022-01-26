@@ -5,7 +5,7 @@ import numpy as np
 import logging
 
 from spn.algorithms.EM import EM_optimization
-
+from spn.algorithms.MEU import meu
 logger = logging.getLogger(__name__)
 
 import warnings
@@ -137,7 +137,7 @@ def learner(spmn, n=10,bias=0):
 
 
 
-def buildSPMN(dataset,ver):
+def buildSPMN(dataset,ver,buildingJson={"before":{"ll":[],"meu":[]},"after":{"ll":[],"meu":[]}}):
     partial_order = get_partial_order(dataset)
     utility_node = get_utilityNode(dataset)
     decision_nodes = get_decNode(dataset)
@@ -159,9 +159,15 @@ def buildSPMN(dataset,ver):
     spmn = spmn.learn_spmn(train)
     print(get_number_of_nodes(spmn))
     print(get_structure_stats_dict(spmn)["nodes"],"  pizza")
+    buildingJson["before"]["meu"].append(meu(spmn,test)[0])
+    buildingJson["before"]["ll"].append(log_likelihood(spmn,test)[0][0])
+   
     EM_optimization(spmn,train)
-
-    return spmn
+   
+    buildingJson["after"]["meu"].append(meu(spmn,test)[0])
+    buildingJson["after"]["ll"].append(log_likelihood(spmn,test)[0][0])
+   
+    return spmn, buildingJson
 
 
 def credal_best_next_decision(cspmn_list,state):
