@@ -155,16 +155,16 @@ def buildSPMN(dataset,ver,buildingJson={"before":{"ll":[],"meu":[]},"after":{"ll
     # print("Start Learning...")
     spmn = SPMN(partial_order, decision_nodes, utility_node, feature_names, meta_types,
                 cluster_by_curr_information_set=True, util_to_bin=False,ver=ver)
-
+    meu_test = [[np.nan]*len(feature_names)]
     spmn = spmn.learn_spmn(train)
     print(get_number_of_nodes(spmn))
     print(get_structure_stats_dict(spmn)["nodes"],"  pizza")
-    buildingJson["before"]["meu"].append(meu(spmn,test)[0])
+    buildingJson["before"]["meu"].append(meu(spmn,meu_test)[0])
     buildingJson["before"]["ll"].append(log_likelihood(spmn,test)[0][0])
    
     EM_optimization(spmn,train)
    
-    buildingJson["after"]["meu"].append(meu(spmn,test)[0])
+    buildingJson["after"]["meu"].append(meu(spmn,meu_test)[0])
     buildingJson["after"]["ll"].append(log_likelihood(spmn,test)[0][0])
    
     return spmn, buildingJson

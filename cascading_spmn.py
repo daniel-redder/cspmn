@@ -95,7 +95,7 @@ class caSpmn():
         for i in tqdm(range(1,self.number_of_sets)):
             spmn, buildingJson = buildSPMN(self.dataset,self.vers[i],buildingJson=buildingJson)
             spmn_bucket.append(spmn)
-        with open("output/cspmn_data.json") as f:
+        with open("output/cspmn_data.json","w+") as f:
             json.dump(buildingJson, f)
 
         return spmn_bucket
