@@ -4,8 +4,6 @@ from itertools import repeat
 import numpy as np
 
 import logging
-
-from learnSPMNS import get_reward
 from spn.algorithms.EM import EM_optimization
 from spn.algorithms.MEU import meu
 logger = logging.getLogger(__name__)
@@ -71,16 +69,19 @@ def fixWeightRange(curr_node_list=[],bias=0,minW=50,maxW=50):
 
         for curr_node in curr_node_list:
 
-            if min(curr_node.weights) < minW: minW = min(curr_node.weights)
-            if max(curr_node.weights) > maxW: maxW = max(curr_node.weights)
-
+            if min(curr_node.weights < minW):
+                minW = min(curr_node.weights)
+                print(minW," minW")
+            if max(curr_node.weights) > maxW:
+                maxW = max(curr_node.weights)
+                print(maxW," maxW")
     for i in range(0, len(curr_node_parser.children)):
         # print(f"learning child {i}")
-        fixWeightRange([node.children[i] for node in curr_node_list],bias,minW,maxW)
+        fixWeightRange([node.children[i] for node in curr_node_list],bias,max(0,minW),min(100,maxW+bias))
 
     #quick test
     #this can go negative because the dirchlet distribution will normalize it.
-    print(minW,bias)
+    #print(minW,bias)
     return max(0,minW-bias),min(maxW+bias,100)
 
 
@@ -133,7 +134,7 @@ def learner(spmn, n=10,bias=0):
     curr_node_list = [copy.deepcopy(spmn) for x in range(n)]
     rangeW = fixWeightRange(curr_node_list,bias)
     spmn,throwaway, count = learnCSPMNs(curr_node_list,rangeW)
-    print(count,"this is the count")
+    #print(count,"this is the count")
     return spmn, rangeW, count
 
 
@@ -163,17 +164,17 @@ def buildSPMN(dataset,ver,buildingJson={"before":{"ll":[],"meu":[],"data":[],"re
     print(get_structure_stats_dict(spmn)["nodes"],"  pizza")
     buildingJson["before"]["meu"].append(meu(spmn,meu_test)[0])
     buildingJson["before"]["ll"].append(log_likelihood(spmn,test)[0][0])
-    rewards, reward_dev = test_rewards(spmn,dataset, test)
-    buildingJson["before"]["dataset"].append(dataset)
-    buildingJson["before"]["rewards"].append(rewards)
-    buildingJson["before"]["reward_dev"].append(reward_dev)
+    #rewards, reward_dev = test_rewards(spmn,dataset, test)
+    buildingJson["before"]["data"].append(dataset)
+    #buildingJson["before"]["rewards"].append(rewards)
+    #buildingJson["before"]["reward_dev"].append(reward_dev)
     EM_optimization(spmn,train)
 
     buildingJson["after"]["meu"].append(meu(spmn,meu_test)[0])
-    rewards, reward_dev = test_rewards(spmn,dataset, test)
+    #rewards, reward_dev = test_rewards(spmn,dataset, test)
     buildingJson["after"]["ll"].append(log_likelihood(spmn,test)[0][0])
-    buildingJson["after"]["rewards"].append(rewards)
-    buildingJson["after"]["reward_dev"].append(reward_dev)
+    #buildingJson["after"]["rewards"].append(rewards)
+    #buildingJson["after"]["reward_dev"].append(reward_dev)
 
     return spmn, buildingJson
 
@@ -203,7 +204,7 @@ def test_rewards(spmn, dataset, test):
 
     for z in range(batch_count):
         ids = [None for x in range(batch_size)]
-        rewards = pool.starmap(get_reward,zip(repeat(spmn,env)))
+        rewards = pool.starmap(get_reward,zip(ids,repeat(spmn),repeat(env)))
 
         # policies = pool.map(get_reward, ids)
         # policy_set += policies
