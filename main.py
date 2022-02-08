@@ -250,7 +250,7 @@ from main_testing import child_parser
 
 
 datas=["Export_Textiles",'Powerplant_Airpollution', 'HIV_Screening', 'Computer_Diagnostician', 'Test_Strep']
-#datas = ['Computer_Diagnostician']
+print(datas)
 
 #credal_tester(datas)
 from cascading_spmn import caSpmn
@@ -271,6 +271,7 @@ def createCredalSPMNSets():
             pickle.dump(cascading.sets[0],fp)
 
 def caspmn_new_full_test(datas):
+    print(datas)
     for dataset in datas:
         print(get_partial_order(dataset))
         cascading = caSpmn(dataset,number_of_credals=1000,number_of_sets=6,vers=["RDC","RDC","RDC","RDC","RDC","RDC"],bias=5)

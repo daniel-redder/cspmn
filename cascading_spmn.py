@@ -1,4 +1,4 @@
-
+import json
 
 import numpy as np
 
@@ -90,9 +90,13 @@ class caSpmn():
 
     def buildSpmns(self):
         spmn_bucket = []
-        for i in tqdm(range(self.number_of_sets)):
-            spmn_bucket.append(buildSPMN(self.dataset,self.vers[i]))
+        spmn, buildingJson = buildSPMN(self.dataset, self.vers[0])
 
+        for i in tqdm(range(1,self.number_of_sets)):
+            spmn, buildingJson = buildSPMN(self.dataset,self.vers[i],buildingJson=buildingJson)
+            spmn_bucket.append(spmn)
+        with open("output/cspmn_data.json","w+") as f:
+            json.dump(buildingJson, f)
 
         return spmn_bucket
 
