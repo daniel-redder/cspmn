@@ -1,0 +1,8 @@
+
+HIV_Screening
+	Run Time : 29.647652626037598
+	Log Likelihood : -0.6119471635087381
+	MEU : 42.582734183407034
+	Nodes : 127
+	Parameters : 31
+	Layers : 12

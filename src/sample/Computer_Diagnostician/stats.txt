@@ -1,0 +1,8 @@
+
+Computer_Diagnostician
+	Run Time : 25.129019260406494
+	Log Likelihood : -0.9083778759889433
+	MEU : -208.351
+	Nodes : 56
+	Parameters : 10
+	Layers : 10
